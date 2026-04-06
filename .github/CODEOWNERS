@@ -1,0 +1,33 @@
+# CDP Marketing Platform - Code Ownership by Agent Role
+# Auto-assigns PR reviewers based on modified files
+
+# CodeWriter Agent - Frontend Components & Backend API Routes
+frontend/app/ @CodeWriter
+frontend/components/ @CodeWriter
+backend/app/ @CodeWriter
+backend/routes/ @CodeWriter
+
+# TestingAgent - Tests & Validation
+backend/tests/ @TestingAgent
+frontend/__tests__/ @TestingAgent
+*.test.ts @TestingAgent
+*.test.tsx @TestingAgent
+test_*.py @TestingAgent
+
+# UIUXAgent - Design System & Styling
+frontend/components/charts/ @UIUXAgent
+frontend/components/dashboard/ @UIUXAgent
+frontend/components/layout/ @UIUXAgent
+DESIGN_SYSTEM.md @UIUXAgent
+*.css @UIUXAgent
+
+# IntegrationAgent - Integration & Deployment
+.github/workflows/ @IntegrationAgent
+backend/logs/ @IntegrationAgent
+docs/ @IntegrationAgent
+CLAUDE.md @IntegrationAgent
+
+# Shared Ownership
+backend/config/ @CodeWriter @TestingAgent
+frontend/lib/ @CodeWriter @UIUXAgent
+data/ @CodeWriter @TestingAgent

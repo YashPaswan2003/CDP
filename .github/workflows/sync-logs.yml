@@ -1,0 +1,36 @@
+name: Sync Logs to GitHub
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure logs directory exists
+        run: mkdir -p backend/logs
+
+      - name: Create placeholder logs if they don't exist
+        run: |
+          [ -f backend/logs/agents.log ] || echo '[]' > backend/logs/agents.log
+          [ -f backend/logs/api.log ] || echo '[]' > backend/logs/api.log
+          [ -f backend/logs/database.log ] || echo '[]' > backend/logs/database.log
+          [ -f backend/logs/errors.log ] || echo '[]' > backend/logs/errors.log
+
+      - name: Commit and push logs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add backend/logs/
+          if git diff --cached --quiet; then
+            echo "No log changes to commit"
+          else
+            git commit -m "chore: sync logs $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          fi
