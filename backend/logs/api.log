@@ -1,1 +1,4 @@
 {"timestamp": "2026-04-06T15:15:00Z", "level": "INFO", "source": "api", "action": "startup", "status": "ready", "message": "API log initialized"}
+{"timestamp": "2026-04-06T10:04:23.986318Z", "level": "INFO", "source": "api", "message": "GET /api/metrics/count - returned 110"}
+{"timestamp": "2026-04-06T10:04:23.992644Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
+{"timestamp": "2026-04-06T10:04:23.998676Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
