@@ -30,6 +30,7 @@ interface AccountContextType {
   accessibleAccounts: ClientAccount[];
   switchAccount: (accountId: string) => void;
   isLoading: boolean;
+  refreshAccounts: () => Promise<void>;
 }
 
 const AccountContext = createContext<AccountContextType | null>(null);
@@ -85,6 +86,7 @@ const MOCK_USERS: UserProfile[] = [
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [accounts, setAccounts] = useState<ClientAccount[]>(MOCK_ACCOUNTS);
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize user and account from localStorage on mount
@@ -99,23 +101,23 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const defaultAccountId =
       user.role === "admin" ? "ethinos" : user.accessibleAccountIds[0] || "kotak-mf";
 
-    // Validate stored account ID exists in MOCK_ACCOUNTS, otherwise use default
-    const validStored = storedAccountId && MOCK_ACCOUNTS.find(a => a.id === storedAccountId);
+    // Validate stored account ID exists in accounts, otherwise use default
+    const validStored = storedAccountId && accounts.find(a => a.id === storedAccountId);
     setSelectedAccountId(validStored ? storedAccountId : defaultAccountId);
 
     setIsLoading(false);
-  }, []);
+  }, [accounts]);
 
   // Get accounts accessible to the current user
   const accessibleAccounts = currentUser
-    ? MOCK_ACCOUNTS.filter((acc) =>
+    ? accounts.filter((acc) =>
         currentUser.accessibleAccountIds.includes(acc.id)
       )
     : [];
 
   // Get the currently selected account
   const selectedAccount =
-    MOCK_ACCOUNTS.find((acc) => acc.id === selectedAccountId) || null;
+    accounts.find((acc) => acc.id === selectedAccountId) || null;
 
   // Switch to a different account (with validation)
   const switchAccount = (accountId: string) => {
@@ -128,12 +130,28 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Refresh accounts list from API (or mock)
+  const refreshAccounts = async () => {
+    try {
+      // TODO: Replace with real API call to GET /api/accounts
+      // const res = await fetch('/api/accounts');
+      // const newAccounts = await res.json();
+      // setAccounts(newAccounts);
+
+      // For now, just trigger a state update with mock data
+      setAccounts([...MOCK_ACCOUNTS]);
+    } catch (error) {
+      console.error("Failed to refresh accounts:", error);
+    }
+  };
+
   const value: AccountContextType = {
     currentUser,
     selectedAccount,
     accessibleAccounts,
     switchAccount,
     isLoading,
+    refreshAccounts,
   };
 
   return (

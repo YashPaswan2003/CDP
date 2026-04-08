@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components";
 import { Users, TrendingUp, DollarSign, Zap, X } from "lucide-react";
+import { useAccount } from "@/lib/accountContext";
 
 export default function ClientsPage() {
   const router = useRouter();
