@@ -510,24 +510,34 @@ async def ai_review_upload(request: AIReviewRequest):
         # Re-parse the file to get fresh analysis
         try:
             sheets = parse_file(file_path)
-            classified = classify_sheets(sheets)
+            classified_list = classify_sheets(sheets)
         except Exception as e:
             conn.close()
             logger.error(f"Failed to parse file {file_path}: {e}")
             raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
         # Build sheet info for Claude
+        # classify_sheets returns a list of dicts with keys: sheet_name, type, rows, reason
         sheets_info = []
-        for sheet_info in classified.get("included", []):
-            sheet_name = sheet_info["name"]
+        for sheet_info in classified_list:
+            sheet_name = sheet_info.get("sheet_name")
+            sheet_type = sheet_info.get("type", "data")
+
+            # Skip sheets that should not be imported
+            if sheet_type == "skip":
+                continue
+
+            if sheet_name not in sheets:
+                continue
+
             df = sheets[sheet_name]
 
             column_mapping = map_columns(list(df.columns))
 
             sheets_info.append({
                 "name": sheet_name,
-                "type": sheet_info.get("type", "data"),
-                "row_count": sheet_info.get("row_count", len(df)),
+                "type": sheet_type,
+                "row_count": sheet_info.get("rows", len(df)),
                 "columns": list(df.columns),
                 "column_mapping": {k: v["canonical"] for k, v in column_mapping.items()},
                 "first_rows": df.head(3).values.tolist()

@@ -115,14 +115,11 @@ class TestAIReviewEndpoint:
             }
             mock_parse.return_value = mock_sheets
 
-            # Setup classify_sheets to return sheet info
-            mock_classify.return_value = {
-                "included": [
-                    {"name": "Brand Awareness", "type": "raw", "row_count": 2},
-                    {"name": "Lead Gen", "type": "raw", "row_count": 1}
-                ],
-                "skipped": []
-            }
+            # Setup classify_sheets to return sheet info (it returns a list, not a dict)
+            mock_classify.return_value = [
+                {"sheet_name": "Brand Awareness", "type": "raw", "rows": 2, "reason": "test"},
+                {"sheet_name": "Lead Gen", "type": "raw", "rows": 1, "reason": "test"}
+            ]
 
             mock_claude.return_value = mock_response
 
@@ -165,10 +162,9 @@ class TestAIReviewEndpoint:
                 "Sheet1": pd.DataFrame({"Col1": [1], "Col2": [2]})
             }
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Sheet1", "type": "raw", "rows": 1, "reason": "test"}
+            ]
             mock_claude.return_value = mock_response
 
             response = client.post(
@@ -203,10 +199,9 @@ class TestAIReviewEndpoint:
                 "Sheet1": pd.DataFrame({"Col1": [1]})
             }
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Sheet1", "type": "raw", "rows": 1, "reason": "test"}
+            ]
 
             response = client.post(
                 "/api/upload/ai-review",
@@ -235,10 +230,9 @@ class TestAIReviewEndpoint:
             import pandas as pd
             mock_sheets = {"Sheet1": pd.DataFrame({"col1": [1]})}
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Sheet1", "type": "raw", "rows": 1, "reason": "test"}
+            ]
             mock_claude.return_value = mock_response
 
             response = client.post(
@@ -278,14 +272,11 @@ class TestAIReviewEndpoint:
                 "Conversion": pd.DataFrame({"col1": [1]})
             }
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [
-                    {"name": "Awareness", "type": "raw", "row_count": 1},
-                    {"name": "Retargeting", "type": "raw", "row_count": 1},
-                    {"name": "Conversion", "type": "raw", "row_count": 1}
-                ],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Awareness", "type": "raw", "rows": 1, "reason": "test"},
+                {"sheet_name": "Retargeting", "type": "raw", "rows": 1, "reason": "test"},
+                {"sheet_name": "Conversion", "type": "raw", "rows": 1, "reason": "test"}
+            ]
             mock_claude.return_value = mock_response
 
             response = client.post(
@@ -315,10 +306,9 @@ class TestClaudePromptConstruction:
             import pandas as pd
             mock_sheets = {"Sheet1": pd.DataFrame({"Col1": [1]})}
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Sheet1", "type": "raw", "rows": 1, "reason": "test"}
+            ]
             mock_claude.return_value = {
                 "summary": "Test",
                 "funnel_mapping": {},
@@ -343,10 +333,9 @@ class TestClaudePromptConstruction:
             import pandas as pd
             mock_sheets = {"Sheet1": pd.DataFrame({"Col1": [1]})}
             mock_parse.return_value = mock_sheets
-            mock_classify.return_value = {
-                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
-                "skipped": []
-            }
+            mock_classify.return_value = [
+                {"sheet_name": "Sheet1", "type": "raw", "rows": 1, "reason": "test"}
+            ]
             mock_claude.return_value = {
                 "summary": "Test",
                 "funnel_mapping": {},
