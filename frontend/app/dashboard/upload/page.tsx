@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Check, AlertCircle, ChevronRight } from "lucide-react";
 import { useAccount } from "@/lib/accountContext";
+import { UploadBlockedCard } from "@/components/ui/upload-blocked-card";
 
 type UploadStep = "drop" | "mapping" | "confirm" | "success";
 
@@ -189,6 +190,16 @@ export default function UploadPage() {
     }
   };
 
+  // Block upload for Ethinos master account
+  if (selectedAccount?.id === "ethinos") {
+    return (
+      <UploadBlockedCard
+        accountName={selectedAccount?.name || "Ethinos"}
+        message="Select a client account to upload data."
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -242,25 +253,6 @@ export default function UploadPage() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              {/* Client Selector Pill */}
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600/20 border border-amber-600/50 rounded-full">
-                  <span className="text-sm font-semibold text-amber-300">
-                    Uploading for:{" "}
-                  </span>
-                  <select
-                    value={selectedAccountId || ""}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    className="bg-transparent text-amber-300 font-bold border-none outline-none text-sm"
-                  >
-                    <option value="ethinos">Ethinos</option>
-                    <option value="acc-001">QI Spine</option>
-                    <option value="acc-002">E-Commerce</option>
-                    <option value="acc-003">SaaS</option>
-                  </select>
-                </div>
-              </div>
-
               {/* Drop Zone */}
               <motion.div
                 onDragEnter={handleDrag}

@@ -17,18 +17,17 @@ def seed_database():
     # ========== ACCOUNTS ==========
     accounts = [
         {"id": "ethinos", "name": "Ethinos (All Accounts)", "industry": "Agency", "currency": "INR", "platforms": "google,dv360,meta", "client_type": "web"},
-        {"id": "acc-001", "name": "TechStore E-Commerce", "industry": "E-Commerce", "currency": "INR", "platforms": "google,dv360,meta", "client_type": "web"},
-        {"id": "acc-002", "name": "LuxuryRealty", "industry": "Real Estate", "currency": "INR", "platforms": "google,meta", "client_type": "web"},
-        {"id": "acc-003", "name": "FashionBrand", "industry": "Fashion", "currency": "USD", "platforms": "google,dv360,meta", "client_type": "app"},
+        {"id": "kotak-mf", "name": "Kotak Mutual Fund", "industry": "Financial Services", "currency": "INR", "platforms": "google,dv360,meta", "client_type": "web"},
+        {"id": "qi-spine", "name": "QI Spine", "industry": "Healthcare", "currency": "INR", "platforms": "google,dv360,meta", "client_type": "web"},
     ]
 
     for acc in accounts:
         conn.execute(
             """
-            INSERT INTO accounts (id, name, industry, currency, client_type, platforms, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            [acc["id"], acc["name"], acc["industry"], acc["currency"], acc["client_type"], acc["platforms"], datetime.now()]
+            [acc["id"], acc["name"], acc["industry"], acc["currency"], acc["client_type"], acc["platforms"], None, None, None, datetime.now()]
         )
 
     # ========== USERS ==========
