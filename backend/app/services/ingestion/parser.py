@@ -67,10 +67,11 @@ def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
 
         sheets = {}
         with open_workbook(str(file_path)) as wb:
-            for sheet in wb.sheets:
-                # Try to read the sheet
+            for sheet_name in wb.sheets:
+                sheet = wb.get_sheet(sheet_name)
+                # Read sheet rows with row limit to avoid memory bloat
                 rows = []
-                for row_idx, row in enumerate(sheet.rows):
+                for row_idx, row in enumerate(sheet.rows()):
                     row_data = [cell.v if cell else None for cell in row]
                     rows.append(row_data)
                     # Limit to first 10k rows to avoid memory bloat
@@ -83,7 +84,7 @@ def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
                     data = rows[1:]
                     df = pd.DataFrame(data, columns=headers)
                     df = df.astype(str)
-                    sheets[sheet.name] = df
+                    sheets[sheet_name] = df
 
         logger.info(f"Parsed {len(sheets)} sheets from {file_path.name}")
         return sheets
