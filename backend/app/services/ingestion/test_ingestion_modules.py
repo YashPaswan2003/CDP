@@ -165,7 +165,7 @@ class TestNormalizer:
     def test_normalize_ctr_percentage_format(self):
         """Test CTR percentage (0-100) is divided by 100."""
         # When CTR > 1, treat as percentage
-        assert normalize_value("2.34", "ctr") == 0.0234
+        assert normalize_value("2.34", "ctr") == pytest.approx(0.0234, rel=1e-4)
 
     def test_normalize_ctr_with_sample_detection(self):
         """Test CTR format detection from sample data."""

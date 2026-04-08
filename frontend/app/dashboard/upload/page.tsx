@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Check, AlertCircle, ChevronRight } from "lucide-react";
 import { useAccount } from "@/lib/accountContext";
 
-type UploadStep = "client" | "drop" | "mapping" | "confirm" | "success";
+type UploadStep = "drop" | "mapping" | "confirm" | "success";
 
 interface SheetSummary {
   name: string;
@@ -19,7 +19,7 @@ interface SheetSummary {
 
 export default function UploadPage() {
   const { selectedAccount } = useAccount();
-  const [step, setStep] = useState<UploadStep>("client");
+  const [step, setStep] = useState<UploadStep>("drop");
   const [selectedAccountId, setSelectedAccountId] = useState(selectedAccount?.id);
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -204,11 +204,11 @@ export default function UploadPage() {
 
         {/* Step Indicator */}
         <div className="flex items-center justify-between">
-          {["client", "drop", "mapping", "confirm", "success"].map((s, i) => (
+          {["drop", "mapping", "confirm", "success"].map((s, i) => (
             <div key={s} className="flex items-center flex-1">
               <motion.div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                  ["client", "drop", "mapping", "confirm", "success"].indexOf(
+                  ["drop", "mapping", "confirm", "success"].indexOf(
                     step
                   ) >= i
                     ? "bg-blue-600 text-white"
@@ -217,10 +217,10 @@ export default function UploadPage() {
               >
                 {i + 1}
               </motion.div>
-              {i < 4 && (
+              {i < 3 && (
                 <div
                   className={`h-1 flex-1 mx-2 transition-all ${
-                    ["client", "drop", "mapping", "confirm", "success"].indexOf(
+                    ["drop", "mapping", "confirm", "success"].indexOf(
                       step
                     ) > i
                       ? "bg-blue-600"
@@ -233,47 +233,6 @@ export default function UploadPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {/* Step 0: Client Selector */}
-          {step === "client" && (
-            <motion.div
-              key="client"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  Select Account to Upload To
-                </label>
-                <select
-                  value={selectedAccountId || ""}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
-                >
-                  <option value="">Select an account...</option>
-                  <option value="ethinos">Ethinos (Master)</option>
-                  <option value="acc-001">QI Spine</option>
-                  <option value="acc-002">E-Commerce</option>
-                  <option value="acc-003">SaaS</option>
-                </select>
-
-                <motion.button
-                  onClick={() => {
-                    if (selectedAccountId) setStep("drop");
-                    else setError("Please select an account");
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={!selectedAccountId}
-                  className="w-full mt-6 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
-                >
-                  Continue <ChevronRight className="w-4 h-4" />
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
           {/* Step 1: Drop Zone */}
           {step === "drop" && (
             <motion.div

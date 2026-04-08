@@ -9,13 +9,16 @@ def create_tables(conn):
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS accounts (
-            id          VARCHAR PRIMARY KEY,
-            name        VARCHAR NOT NULL,
-            industry    VARCHAR,
-            currency    VARCHAR(3) DEFAULT 'INR',
-            client_type VARCHAR(5) DEFAULT 'web',
-            platforms   VARCHAR DEFAULT 'google,dv360,meta',
-            created_at  TIMESTAMP DEFAULT NOW()
+            id                VARCHAR PRIMARY KEY,
+            name              VARCHAR NOT NULL,
+            industry          VARCHAR,
+            currency          VARCHAR(3) DEFAULT 'INR',
+            client_type       VARCHAR(5) DEFAULT 'web',
+            platforms         VARCHAR DEFAULT 'google,dv360,meta',
+            brand_primary     VARCHAR,
+            brand_secondary   VARCHAR,
+            brand_accent      VARCHAR,
+            created_at        TIMESTAMP DEFAULT NOW()
         )
     """)
 
