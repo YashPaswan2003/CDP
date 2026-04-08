@@ -26,10 +26,11 @@ client = TestClient(app)
 @pytest.fixture
 def test_upload_id(setup_database):
     """Create a test upload record in the database."""
+    import uuid
     conn = get_connection()
 
-    # Insert a test upload
-    upload_id = "test-upload-001"
+    # Insert a test upload with unique ID
+    upload_id = f"test-upload-{uuid.uuid4().hex[:8]}"
     account_id = "ethinos"
 
     conn.execute("""
@@ -266,7 +267,25 @@ class TestAIReviewEndpoint:
             "column_suggestions": {}
         }
 
-        with patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+        with patch("app.routes.upload.parse_file") as mock_parse, \
+             patch("app.routes.upload.classify_sheets") as mock_classify, \
+             patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+
+            import pandas as pd
+            mock_sheets = {
+                "Awareness": pd.DataFrame({"col1": [1]}),
+                "Retargeting": pd.DataFrame({"col1": [1]}),
+                "Conversion": pd.DataFrame({"col1": [1]})
+            }
+            mock_parse.return_value = mock_sheets
+            mock_classify.return_value = {
+                "included": [
+                    {"name": "Awareness", "type": "raw", "row_count": 1},
+                    {"name": "Retargeting", "type": "raw", "row_count": 1},
+                    {"name": "Conversion", "type": "raw", "row_count": 1}
+                ],
+                "skipped": []
+            }
             mock_claude.return_value = mock_response
 
             response = client.post(
@@ -289,7 +308,17 @@ class TestClaudePromptConstruction:
         """Test that prompt mentions account name."""
         upload_id, account_id = test_upload_id
 
-        with patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+        with patch("app.routes.upload.parse_file") as mock_parse, \
+             patch("app.routes.upload.classify_sheets") as mock_classify, \
+             patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+
+            import pandas as pd
+            mock_sheets = {"Sheet1": pd.DataFrame({"Col1": [1]})}
+            mock_parse.return_value = mock_sheets
+            mock_classify.return_value = {
+                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
+                "skipped": []
+            }
             mock_claude.return_value = {
                 "summary": "Test",
                 "funnel_mapping": {},
@@ -307,7 +336,17 @@ class TestClaudePromptConstruction:
         """Test that prompt includes sheet names, row counts, and column data."""
         upload_id, account_id = test_upload_id
 
-        with patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+        with patch("app.routes.upload.parse_file") as mock_parse, \
+             patch("app.routes.upload.classify_sheets") as mock_classify, \
+             patch("app.routes.upload.call_claude_for_file_analysis") as mock_claude:
+
+            import pandas as pd
+            mock_sheets = {"Sheet1": pd.DataFrame({"Col1": [1]})}
+            mock_parse.return_value = mock_sheets
+            mock_classify.return_value = {
+                "included": [{"name": "Sheet1", "type": "raw", "row_count": 1}],
+                "skipped": []
+            }
             mock_claude.return_value = {
                 "summary": "Test",
                 "funnel_mapping": {},

@@ -9,3 +9,4 @@ export { default as LineChart } from "./charts/LineChart";
 export { default as BarChart } from "./charts/BarChart";
 export { default as FunnelChart } from "./charts/FunnelChart";
 export { default as DonutChart } from "./charts/DonutChart";
+export { EmptyState } from "./ui/empty-state";

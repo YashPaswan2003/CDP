@@ -1,9 +1,9 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useAccount } from "@/lib/accountContext";
-import { ChartContainer } from "@/components";
-import { getFunnelData } from "@/lib/mockData";
-import { useState } from "react";
+import { ChartContainer, EmptyState } from "@/components";
+import { useState, useEffect } from "react";
+import { BarChart3 } from "lucide-react";
 
 const subNavItems = [
   { label: "Overview", href: "/dashboard/analytics/google-ads" },
@@ -20,12 +20,76 @@ const subNavItems = [
   { label: "Reports", href: "/dashboard/analytics/google-ads/reports" },
 ];
 
+interface FunnelStage {
+  impressions: number;
+  clicks: number;
+  cost: number;
+  reach: number;
+}
+
+interface FunnelData {
+  tofu: FunnelStage;
+  mofu: FunnelStage;
+  bofu: FunnelStage;
+}
+
 export default function GoogleAdsFunnel() {
   const { selectedAccount } = useAccount();
   const pathname = usePathname();
-  const [funnelMode, setFunnelMode] = useState<"web" | "app">(selectedAccount?.clientType ?? "web");
+  const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const stages = getFunnelData("google", funnelMode);
+  useEffect(() => {
+    const fetchFunnelData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        if (!selectedAccount?.id) {
+          setFunnelData(null);
+          setLoading(false);
+          return;
+        }
+
+        const params = new URLSearchParams({
+          account_id: selectedAccount.id,
+          platform: "google",
+        });
+
+        const response = await fetch(`/api/analytics/funnel?${params}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch funnel data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setFunnelData(data.funnel);
+      } catch (err) {
+        console.error("Error fetching funnel data:", err);
+        setError(err instanceof Error ? err.message : "Failed to load funnel data");
+        setFunnelData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFunnelData();
+  }, [selectedAccount?.id]);
+
+  // Check if we have any data
+  const hasData =
+    funnelData &&
+    (funnelData.tofu.impressions > 0 || funnelData.mofu.impressions > 0 || funnelData.bofu.impressions > 0);
+
+  // Helper function to get stage label and color
+  const getStageInfo = (stage: string) => {
+    const stageInfo: Record<string, { label: string; color: string }> = {
+      tofu: { label: "Awareness (TOFU)", color: "from-blue-500 to-blue-400" },
+      mofu: { label: "Consideration (MOFU)", color: "from-purple-500 to-purple-400" },
+      bofu: { label: "Conversion (BOFU)", color: "from-amber-500 to-amber-400" },
+    };
+    return stageInfo[stage] || { label: stage.toUpperCase(), color: "from-gray-500 to-gray-400" };
+  };
 
   return (
     <div className="space-y-6">
@@ -48,49 +112,74 @@ export default function GoogleAdsFunnel() {
         ))}
       </div>
 
-      <ChartContainer title="Conversion Funnel">
-        <div className="space-y-6">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFunnelMode("web")}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                funnelMode === "web"
-                  ? "bg-primary-500 text-white"
-                  : "bg-slate-800 text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              Web
-            </button>
-            <button
-              onClick={() => setFunnelMode("app")}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                funnelMode === "app"
-                  ? "bg-primary-500 text-white"
-                  : "bg-slate-800 text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              App
-            </button>
+      <ChartContainer title="TOFU/MOFU/BOFU Conversion Funnel">
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400"></div>
           </div>
-          {stages.map((stage, idx) => (
-            <div key={idx} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-text-primary font-medium">{stage.stage}</span>
-                <span className="text-text-secondary text-sm">
-                  {stage.value.toLocaleString()} {idx > 0 && `(-${stage.dropoffPercent}%)`}
-                </span>
-              </div>
-              <div className="w-full bg-slate-800 rounded-full h-8 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-primary-500 to-primary-400 h-full flex items-center px-3"
-                  style={{ width: `${Math.max(10, (stage.value / stages[0].value) * 100)}%` }}
-                >
-                  <span className="text-xs font-semibold text-white">{Math.round((stage.value / stages[0].value) * 100)}%</span>
+        )}
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 text-red-400">
+            <p className="font-medium">Error loading funnel data</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && !hasData && (
+          <EmptyState
+            icon={<BarChart3 size={48} />}
+            title="No data yet"
+            message="Upload your first campaign report to see funnel metrics here."
+            action={{ label: "Upload Data", href: "/dashboard/upload" }}
+          />
+        )}
+
+        {!loading && !error && hasData && (
+          <div className="space-y-8">
+            {(["tofu", "mofu", "bofu"] as const).map((stage) => {
+              const data = funnelData[stage];
+              const info = getStageInfo(stage);
+              const ctr = data.clicks > 0 ? ((data.clicks / data.impressions) * 100).toFixed(2) : "0.00";
+
+              return (
+                <div key={stage} className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-text-primary font-semibold">{info.label}</h3>
+                      <p className="text-text-secondary text-sm">
+                        {data.impressions.toLocaleString()} impressions, {data.clicks.toLocaleString()} clicks
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-text-primary font-semibold">₹{data.cost.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</p>
+                      <p className="text-text-secondary text-sm">{ctr}% CTR</p>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-800 rounded-full h-10 overflow-hidden">
+                    <div
+                      className={`bg-gradient-to-r ${info.color} h-full flex items-center px-4 transition-all duration-300`}
+                      style={{
+                        width: `${Math.max(
+                          15,
+                          funnelData.tofu.impressions > 0 ? (data.impressions / funnelData.tofu.impressions) * 100 : 0
+                        )}%`,
+                      }}
+                    >
+                      <span className="text-xs font-semibold text-white whitespace-nowrap">
+                        {Math.round(
+                          funnelData.tofu.impressions > 0 ? (data.impressions / funnelData.tofu.impressions) * 100 : 0
+                        )}
+                        %
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </ChartContainer>
     </div>
   );
