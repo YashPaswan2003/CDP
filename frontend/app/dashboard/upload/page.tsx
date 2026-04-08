@@ -21,7 +21,7 @@ interface SheetSummary {
 export default function UploadPage() {
   const { selectedAccount } = useAccount();
   const [step, setStep] = useState<UploadStep>("drop");
-  const [selectedAccountId, setSelectedAccountId] = useState(selectedAccount?.id);
+  const selectedAccountId = selectedAccount?.id;
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploadId, setUploadId] = useState<string>("");
@@ -571,11 +571,10 @@ export default function UploadPage() {
                   </motion.button>
                   <motion.button
                     onClick={() => {
-                      setStep("client");
+                      setStep("drop");
                       setFile(null);
                       setLogLines([]);
                       setSheets({});
-                      setSelectedAccountId("");
                     }}
                     whileHover={{ scale: 1.05 }}
                     className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-white font-semibold rounded-lg transition-all"
