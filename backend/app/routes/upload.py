@@ -1,12 +1,14 @@
 """Upload routes for Excel/CSV ingestion pipeline."""
 import json
 import logging
+import os
 from pathlib import Path
 from datetime import datetime
 from uuid import uuid4
-from typing import Optional
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from pydantic import BaseModel
+from anthropic import Anthropic
 from app.database.connection import get_connection
 from app.services.ingestion import (
     parse_file,
@@ -19,6 +21,18 @@ from app.services.ingestion.importer import compute_file_hash, import_metrics
 
 logger = logging.getLogger("ingestion")
 router = APIRouter(prefix="/api/upload", tags=["upload"])
+
+# Initialize Anthropic client (will be None if API key not set)
+try:
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+    if ANTHROPIC_API_KEY:
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    else:
+        anthropic_client = None
+        logger.warning("ANTHROPIC_API_KEY not set - AI review will use mock mode")
+except Exception as e:
+    anthropic_client = None
+    logger.error(f"Failed to initialize Anthropic client: {e}")
 
 # Ensure uploads directory exists
 UPLOADS_DIR = Path(__file__).parent.parent.parent / "uploads"
@@ -44,6 +58,16 @@ class StatusResponse(BaseModel):
     status: str
     rows_imported: int
     log_lines: list
+
+class AIReviewRequest(BaseModel):
+    upload_id: str
+    account_id: str
+
+class AIReviewResponse(BaseModel):
+    summary: str
+    funnel_mapping: Dict[str, str]  # {sheet_name: "tofu"|"mofu"|"bofu"}
+    column_suggestions: Dict[str, str]  # {raw_col: canonical_field}
+    clarifying_question: Optional[str] = None
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_upload(
@@ -323,4 +347,208 @@ async def get_upload_history(client_id: str):
 
     except Exception as e:
         logger.error(f"History fetch failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def call_claude_for_file_analysis(
+    file_summary: str,
+    account_name: str,
+    sheets_info: list,
+    file_name: str
+) -> Dict[str, Any]:
+    """
+    Call Claude Haiku to analyze file structure and suggest mappings.
+
+    Args:
+        file_summary: Human-readable summary of file contents
+        account_name: Name of the account uploading the file
+        sheets_info: List of sheet info dicts with names, row counts, columns, first rows
+        file_name: Name of the uploaded file
+
+    Returns:
+        Dict with keys: summary, funnel_mapping, column_suggestions, clarifying_question (optional)
+    """
+    if not anthropic_client:
+        # Mock response when API key not set
+        logger.info("Using mock Claude response (ANTHROPIC_API_KEY not set)")
+        return {
+            "summary": f"File '{file_name}' contains marketing data with {len(sheets_info)} sheets.",
+            "funnel_mapping": {
+                sheets_info[0]["name"]: "tofu" if len(sheets_info) > 0 else "bofu"
+            } if sheets_info else {},
+            "column_suggestions": {
+                col: col.lower().replace(" ", "_")
+                for sheet in sheets_info
+                for col in sheet.get("columns", [])[:5]
+            },
+            "clarifying_question": None
+        }
+
+    # Construct detailed per-sheet data for Claude
+    sheet_details = []
+    for sheet_info in sheets_info:
+        sheet_name = sheet_info["name"]
+        columns = sheet_info.get("columns", [])
+        first_rows = sheet_info.get("first_rows", [])
+        row_count = sheet_info.get("row_count", 0)
+
+        sheet_text = f"\nSheet: {sheet_name} ({row_count} rows)\n"
+        sheet_text += f"Columns: {', '.join(columns)}\n"
+
+        if first_rows:
+            sheet_text += "First 3 rows:\n"
+            for i, row in enumerate(first_rows[:3], 1):
+                row_str = " | ".join(str(v)[:20] for v in row)
+                sheet_text += f"  Row {i}: {row_str}\n"
+
+        sheet_details.append(sheet_text)
+
+    prompt = f"""You are analyzing a marketing data upload for {account_name}.
+
+File: {file_name}
+Sheets found: {', '.join(s['name'] for s in sheets_info)} ({len(sheets_info)} total)
+
+{"".join(sheet_details)}
+
+Based on this data:
+1. State in 2-3 sentences what this file appears to contain (platform, campaign types, date range if visible)
+2. Identify which sheets map to TOFU/MOFU/BOFU funnel stages based on campaign names (Awareness/Display/Brand → TOFU, Retargeting/Engagement → MOFU, Conversion/Lead/Purchase → BOFU)
+3. Show your suggested column mappings as a JSON object where keys are raw column names and values are canonical fields (impressions, clicks, cost, conversions, ctr, cpc, campaign_name, etc.)
+4. Ask ONE clarifying question if anything is ambiguous (use null if not needed)
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "summary": "2-3 sentence summary",
+  "funnel_mapping": {{"Sheet1": "tofu", "Sheet2": "bofu"}},
+  "column_suggestions": {{"Raw_Col_1": "canonical_field", "Raw_Col_2": "canonical_field"}},
+  "clarifying_question": "Your question or null"
+}}"""
+
+    try:
+        message = anthropic_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        response_text = message.content[0].text.strip()
+
+        # Try to parse as JSON
+        try:
+            result = json.loads(response_text)
+        except json.JSONDecodeError:
+            # If response is not valid JSON, extract JSON from code blocks
+            if "```json" in response_text:
+                json_str = response_text.split("```json")[1].split("```")[0].strip()
+                result = json.loads(json_str)
+            elif "```" in response_text:
+                json_str = response_text.split("```")[1].split("```")[0].strip()
+                result = json.loads(json_str)
+            else:
+                raise ValueError("Could not parse Claude response as JSON")
+
+        # Ensure required fields
+        result.setdefault("summary", "File analysis complete.")
+        result.setdefault("funnel_mapping", {})
+        result.setdefault("column_suggestions", {})
+        # clarifying_question is optional
+
+        logger.info(f"Claude analysis successful: {len(result.get('column_suggestions', {}))} column mappings suggested")
+        return result
+
+    except Exception as e:
+        logger.error(f"Claude API call failed: {e}")
+        # Return a safe default on error
+        return {
+            "summary": f"File '{file_name}' with {len(sheets_info)} sheets detected.",
+            "funnel_mapping": {},
+            "column_suggestions": {},
+            "clarifying_question": "Could you provide more context about the data structure?"
+        }
+
+
+@router.post("/ai-review", response_model=AIReviewResponse)
+async def ai_review_upload(request: AIReviewRequest):
+    """
+    Phase 4: Post-upload AI review using Claude.
+
+    Analyzes the uploaded file and provides:
+    - Summary of what the file contains
+    - TOFU/MOFU/BOFU sheet mappings
+    - Suggested column mappings
+    - Clarifying question if needed
+
+    Args:
+        request: { upload_id: str, account_id: str }
+
+    Returns:
+        AIReviewResponse with analysis from Claude
+    """
+    try:
+        conn = get_connection()
+
+        # Fetch upload record
+        upload_row = conn.execute(
+            "SELECT file_name, file_path, account_id FROM uploads WHERE id = ?",
+            [request.upload_id]
+        ).fetchall()
+
+        if not upload_row:
+            raise HTTPException(status_code=404, detail=f"Upload not found: {request.upload_id}")
+
+        file_name, file_path, db_account_id = upload_row[0]
+
+        # Get account name
+        account_row = conn.execute(
+            "SELECT name FROM accounts WHERE id = ?",
+            [request.account_id]
+        ).fetchall()
+        account_name = account_row[0][0] if account_row else request.account_id
+
+        # Re-parse the file to get fresh analysis
+        try:
+            sheets = parse_file(file_path)
+            classified = classify_sheets(sheets)
+        except Exception as e:
+            conn.close()
+            logger.error(f"Failed to parse file {file_path}: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
+
+        # Build sheet info for Claude
+        sheets_info = []
+        for sheet_info in classified.get("included", []):
+            sheet_name = sheet_info["name"]
+            df = sheets[sheet_name]
+
+            column_mapping = map_columns(list(df.columns))
+
+            sheets_info.append({
+                "name": sheet_name,
+                "type": sheet_info.get("type", "data"),
+                "row_count": sheet_info.get("row_count", len(df)),
+                "columns": list(df.columns),
+                "column_mapping": {k: v["canonical"] for k, v in column_mapping.items()},
+                "first_rows": df.head(3).values.tolist()
+            })
+
+        conn.close()
+
+        # Call Claude for analysis
+        claude_result = call_claude_for_file_analysis(
+            file_summary="",
+            account_name=account_name,
+            sheets_info=sheets_info,
+            file_name=file_name
+        )
+
+        logger.info(f"AI review completed for upload {request.upload_id}")
+
+        return AIReviewResponse(**claude_result)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI review failed for {request.upload_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

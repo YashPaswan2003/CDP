@@ -572,118 +572,158 @@ def get_daily_metrics(
     return {"daily_metrics": metrics}
 
 
-# ========== FUNNEL ==========
+# ========== FUNNEL (TOFU/MOFU/BOFU) ==========
 @router.get("/funnel")
-def get_funnel(platform: str, client_type: str = "web"):
-    """Get funnel data for a platform and client type."""
-    if platform not in ["google", "dv360", "meta"]:
-        raise HTTPException(status_code=400, detail="Invalid platform")
+def get_funnel(
+    account_id: str = Query(None),
+    date_from: str = Query(None),
+    date_to: str = Query(None),
+    platform: str = Query(None),
+    client_type: str = Query(None),
+):
+    """Get TOFU/MOFU/BOFU funnel data from campaign_metrics table.
 
-    if client_type not in ["web", "app"]:
-        raise HTTPException(status_code=400, detail="Invalid client_type")
+    Phase 5: Returns aggregated funnel stages (TOFU/MOFU/BOFU) instead of 6-stage drop.
 
-    # Platform totals from mock data
-    platform_data = {
-        "google": {
-            "clicks": 56820,
-            "conversions": 2718,
-        },
-        "dv360": {
-            "clicks": 84900,
-            "conversions": 2316,
-        },
-        "meta": {
-            "clicks": 63800,
-            "conversions": 2776,
-        },
+    Parameters:
+    - account_id: Filter by account (optional)
+    - date_from: Start date (optional, YYYY-MM-DD format)
+    - date_to: End date (optional, YYYY-MM-DD format)
+    - platform: Filter by platform (optional)
+    - client_type: Filter by client type (optional, for legacy compatibility)
+
+    Returns: {
+        "funnel": {
+            "tofu": {"impressions": X, "clicks": Y, "cost": Z, "reach": W},
+            "mofu": {...},
+            "bofu": {...}
+        }
+    }
+    """
+    conn = get_connection()
+
+    # Build query for campaign_metrics table aggregated by funnel_stage
+    query = """
+        SELECT
+            funnel_stage,
+            SUM(COALESCE(impressions, 0)) as impressions,
+            SUM(COALESCE(clicks, 0)) as clicks,
+            SUM(COALESCE(cost, 0)) as cost,
+            SUM(COALESCE(reach, 0)) as reach
+        FROM campaign_metrics
+        WHERE 1=1
+    """
+    params = []
+
+    if account_id:
+        query += " AND account_id = ?"
+        params.append(account_id)
+
+    if date_from:
+        query += " AND date_from >= ?"
+        params.append(date_from)
+
+    if date_to:
+        query += " AND date_to <= ?"
+        params.append(date_to)
+
+    if platform:
+        query += " AND platform = ?"
+        params.append(platform)
+
+    query += " GROUP BY funnel_stage"
+
+    result = conn.execute(query, params).fetchall()
+    conn.close()
+
+    # Parse results into three-stage funnel
+    funnel_data = {}
+    for row in result:
+        if row[0]:  # Only if funnel_stage is not null
+            stage_key = row[0].lower()  # tofu, mofu, bofu
+            funnel_data[stage_key] = {
+                "impressions": row[1],
+                "clicks": row[2],
+                "cost": float(row[3]) if row[3] else 0,
+                "reach": row[4],
+            }
+
+    # Ensure all three stages are present (even if empty)
+    funnel = {
+        "tofu": funnel_data.get("tofu", {"impressions": 0, "clicks": 0, "cost": 0, "reach": 0}),
+        "mofu": funnel_data.get("mofu", {"impressions": 0, "clicks": 0, "cost": 0, "reach": 0}),
+        "bofu": funnel_data.get("bofu", {"impressions": 0, "clicks": 0, "cost": 0, "reach": 0}),
     }
 
-    data = platform_data.get(platform, {})
-    clicks = data.get("clicks", 0)
-    conversions = data.get("conversions", 0)
-
-    # Define funnels by client type
-    if client_type == "app":
-        # App funnel: Impressions → Clicks → App Open → Add to Cart → Checkout → Purchase
-        app_open = int(clicks * 0.75)
-        add_to_cart = int(app_open * 0.40)
-        checkout = int(add_to_cart * 0.50)
-        purchase = conversions
-
-        funnel = [
-            {
-                "stage": "Impressions",
-                "value": 1000000,  # Placeholder aggregate
-                "dropoffPercent": 0,
-            },
-            {
-                "stage": "Clicks",
-                "value": clicks,
-                "dropoffPercent": 100 - (app_open / clicks * 100) if clicks else 0,
-            },
-            {
-                "stage": "App Open",
-                "value": app_open,
-                "dropoffPercent": 100 - (add_to_cart / app_open * 100) if app_open else 0,
-            },
-            {
-                "stage": "Add to Cart",
-                "value": add_to_cart,
-                "dropoffPercent": 100 - (checkout / add_to_cart * 100) if add_to_cart else 0,
-            },
-            {
-                "stage": "Checkout",
-                "value": checkout,
-                "dropoffPercent": 100 - (purchase / checkout * 100) if checkout else 0,
-            },
-            {
-                "stage": "Purchase",
-                "value": purchase,
-                "dropoffPercent": 0,
-            },
-        ]
-    else:
-        # Web funnel: Impressions → Clicks → Page Visit → View Item → Begin Checkout → Purchase
-        page_visit = int(clicks * 0.85)
-        view_item = int(page_visit * 0.60)
-        begin_checkout = int(view_item * 0.30)
-        purchase = conversions
-
-        funnel = [
-            {
-                "stage": "Impressions",
-                "value": 1000000,  # Placeholder aggregate
-                "dropoffPercent": 0,
-            },
-            {
-                "stage": "Clicks",
-                "value": clicks,
-                "dropoffPercent": 100 - (page_visit / clicks * 100) if clicks else 0,
-            },
-            {
-                "stage": "Page Visit",
-                "value": page_visit,
-                "dropoffPercent": 100 - (view_item / page_visit * 100) if page_visit else 0,
-            },
-            {
-                "stage": "View Item",
-                "value": view_item,
-                "dropoffPercent": 100 - (begin_checkout / view_item * 100) if view_item else 0,
-            },
-            {
-                "stage": "Begin Checkout",
-                "value": begin_checkout,
-                "dropoffPercent": 100 - (purchase / begin_checkout * 100) if begin_checkout else 0,
-            },
-            {
-                "stage": "Purchase",
-                "value": purchase,
-                "dropoffPercent": 0,
-            },
-        ]
-
-    logger.info(f"GET /api/analytics/funnel - returned funnel for {platform} ({client_type})")
+    logger.info(f"GET /api/analytics/funnel - account_id={account_id}, date_from={date_from}, date_to={date_to}")
     return {"funnel": funnel}
+
+
+# ========== SUMMARY ==========
+@router.get("/summary")
+def get_summary(
+    account_id: str = Query(None),
+    date_from: str = Query(None),
+    date_to: str = Query(None),
+):
+    """Get summary metrics for an account.
+
+    Phase 5: Basic aggregated metrics across all campaigns.
+
+    Parameters:
+    - account_id: Filter by account (optional)
+    - date_from: Start date (optional, YYYY-MM-DD format)
+    - date_to: End date (optional, YYYY-MM-DD format)
+
+    Returns: {
+        "summary": {
+            "total_impressions": X,
+            "total_clicks": Y,
+            "total_cost": Z,
+            "total_conversions": W,
+            "total_reach": V
+        }
+    }
+    """
+    conn = get_connection()
+
+    # Build query to aggregate all campaign metrics
+    query = """
+        SELECT
+            SUM(COALESCE(impressions, 0)) as total_impressions,
+            SUM(COALESCE(clicks, 0)) as total_clicks,
+            SUM(COALESCE(cost, 0)) as total_cost,
+            SUM(COALESCE(reach, 0)) as total_reach
+        FROM campaign_metrics
+        WHERE 1=1
+    """
+    params = []
+
+    if account_id:
+        query += " AND account_id = ?"
+        params.append(account_id)
+
+    if date_from:
+        query += " AND date_from >= ?"
+        params.append(date_from)
+
+    if date_to:
+        query += " AND date_to <= ?"
+        params.append(date_to)
+
+    result = conn.execute(query, params).fetchone()
+    conn.close()
+
+    # Parse results
+    summary = {
+        "total_impressions": result[0] if result and result[0] else 0,
+        "total_clicks": result[1] if result and result[1] else 0,
+        "total_cost": float(result[2]) if result and result[2] else 0,
+        "total_reach": result[3] if result and result[3] else 0,
+    }
+
+    logger.info(f"GET /api/analytics/summary - account_id={account_id}, date_from={date_from}, date_to={date_to}")
+    return {"summary": summary}
 
 
 # ========== PERIOD COMPARISON ==========
