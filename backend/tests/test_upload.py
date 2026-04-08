@@ -15,23 +15,24 @@ def test_upload_valid_csv(client):
 2026-04-12,550e8400-e29b-41d4-a716-446655440001,TechStore Product Launch,google_ads,1100,55,110.00,6,600.00"""
 
     response = client.post(
-        "/upload/csv",
+        "/api/upload/analyze",
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
-        params={"client_id": "550e8400-e29b-41d4-a716-446655440000", "platform": "google_ads"}
+        params={"account_id": "550e8400-e29b-41d4-a716-446655440000"}
     )
     assert response.status_code == 200
 
     data = response.json()
-    assert data["filename"] == "test.csv"
-    assert data["rows_imported"] == 2
-    assert data["status"] == "success"
+    assert data["file_name"] == "test.csv"
+    assert data["status"] == "analyzed"
+    assert "upload_id" in data
+    assert "sheets" in data
 
 def test_upload_non_csv_file(client):
     """Test uploading a non-CSV file."""
     response = client.post(
-        "/upload/csv",
+        "/api/upload/analyze",
         files={"file": ("test.txt", BytesIO(b"not csv"), "text/plain")},
-        params={"client_id": "test-client"}
+        params={"account_id": "test-account"}
     )
     assert response.status_code == 400
 
@@ -41,9 +42,9 @@ def test_upload_invalid_csv(client):
 2026-04-01,test-campaign"""
 
     response = client.post(
-        "/upload/csv",
+        "/api/upload/analyze",
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
-        params={"client_id": "test-client"}
+        params={"account_id": "test-account"}
     )
     assert response.status_code == 400
 

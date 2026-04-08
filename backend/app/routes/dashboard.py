@@ -18,7 +18,7 @@ def get_dashboard(
 
     # Get client info
     client_result = conn.execute(
-        "SELECT name FROM clients WHERE id = ?",
+        "SELECT name FROM accounts WHERE id = ?",
         [client_id]
     ).fetchall()
 
@@ -29,7 +29,7 @@ def get_dashboard(
 
     # Get campaigns for client
     campaigns_result = conn.execute(
-        "SELECT id, name, platform, budget FROM campaigns WHERE client_id = ?",
+        "SELECT id, name, platform, budget FROM campaigns WHERE account_id = ?",
         [client_id]
     ).fetchall()
 

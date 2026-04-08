@@ -2,13 +2,14 @@
 import json
 import logging
 import os
+import subprocess
+import shutil
 from pathlib import Path
 from datetime import datetime
 from uuid import uuid4
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from anthropic import Anthropic
 from app.database.connection import get_connection
 from app.services.ingestion import (
     parse_file,
@@ -21,18 +22,6 @@ from app.services.ingestion.importer import compute_file_hash, import_metrics
 
 logger = logging.getLogger("ingestion")
 router = APIRouter(prefix="/api/upload", tags=["upload"])
-
-# Initialize Anthropic client (will be None if API key not set)
-try:
-    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-    if ANTHROPIC_API_KEY:
-        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
-    else:
-        anthropic_client = None
-        logger.warning("ANTHROPIC_API_KEY not set - AI review will use mock mode")
-except Exception as e:
-    anthropic_client = None
-    logger.error(f"Failed to initialize Anthropic client: {e}")
 
 # Ensure uploads directory exists
 UPLOADS_DIR = Path(__file__).parent.parent.parent / "uploads"
@@ -368,9 +357,9 @@ def call_claude_for_file_analysis(
     Returns:
         Dict with keys: summary, funnel_mapping, column_suggestions, clarifying_question (optional)
     """
-    if not anthropic_client:
-        # Mock response when API key not set
-        logger.info("Using mock Claude response (ANTHROPIC_API_KEY not set)")
+    if not shutil.which("claude"):
+        # Mock response when claude CLI not available
+        logger.info("Using mock Claude response (claude CLI not available)")
         return {
             "summary": f"File '{file_name}' contains marketing data with {len(sheets_info)} sheets.",
             "funnel_mapping": {
@@ -425,15 +414,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 }}"""
 
     try:
-        message = anthropic_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+        claude_bin = shutil.which("claude") or "/opt/homebrew/bin/claude"
+        result = subprocess.run(
+            [claude_bin, "-p", prompt],
+            capture_output=True, text=True, timeout=60
         )
-
-        response_text = message.content[0].text.strip()
+        if result.returncode != 0:
+            raise RuntimeError(f"claude CLI failed: {result.stderr[:200]}")
+        response_text = result.stdout.strip()
 
         # Try to parse as JSON
         try:

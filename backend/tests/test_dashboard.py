@@ -8,15 +8,15 @@ def client():
 
 def test_dashboard_success(client):
     """Test getting dashboard for valid client."""
-    # Use the sample client ID
-    client_id = "550e8400-e29b-41d4-a716-446655440000"
+    # Use the sample account ID from seed
+    client_id = "kotak-mf"
 
     response = client.get(f"/dashboard/{client_id}")
     assert response.status_code == 200
 
     data = response.json()
     assert data["client_id"] == client_id
-    assert data["client_name"] == "TechStore E-commerce"
+    assert data["client_name"] == "Kotak Mutual Fund"
     assert "campaigns" in data
     assert len(data["campaigns"]) > 0
     assert data["total_spend"] > 0
