@@ -278,7 +278,8 @@ export default function ClientsPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/accounts", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/api/accounts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

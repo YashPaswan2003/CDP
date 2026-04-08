@@ -29,7 +29,7 @@ function SidebarContent({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(true); // default true until we check
   const [isReady, setIsReady] = useState(false);
-  const { currentUser, selectedAccount, accessibleAccounts, switchAccount } =
+  const { currentUser, selectedAccount, accessibleAccounts, switchAccount, isLoading } =
     useAccount();
 
   useEffect(() => {
@@ -58,8 +58,14 @@ function SidebarContent({
     return <div className="min-h-screen bg-slate-950">Redirecting...</div>;
   }
 
-  if (!currentUser || !selectedAccount) {
+  // Wait for account context to finish loading
+  if (isLoading || !currentUser) {
     return <div className="min-h-screen bg-slate-950">Loading account data...</div>;
+  }
+
+  // If selectedAccount is still not set but user exists, wait a bit more
+  if (!selectedAccount) {
+    return <div className="min-h-screen bg-slate-950">Initializing...</div>;
   }
 
   // Check if viewing Ethinos master account (can see Clients)

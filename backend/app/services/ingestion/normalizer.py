@@ -61,11 +61,11 @@ def normalize_value(
 
     try:
         # Currency fields: float with symbol/comma handling
-        if field_name in ["cost", "cpc", "cpm"]:
+        if field_name in ["cost", "cpc", "cpm"] or field_name == "float":
             return float(_strip_currency(value_str))
 
         # Count fields: int with comma handling
-        elif field_name in ["impressions", "clicks", "conversions", "reach"]:
+        elif field_name in ["impressions", "clicks", "conversions", "reach"] or field_name == "integer":
             return int(float(_strip_currency(value_str)))
 
         # CTR: Detect format and normalize to ratio (0.0-1.0)
@@ -81,9 +81,10 @@ def normalize_value(
             return value_str
 
     except (ValueError, TypeError) as e:
-        raise ValueError(
+        logger.warning(
             f"Failed to normalize field '{field_name}' with value '{value}': {e}"
-        ) from e
+        )
+        return None
 
 
 def _strip_currency(value_str: str) -> str:

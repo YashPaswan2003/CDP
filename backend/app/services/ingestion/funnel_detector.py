@@ -73,6 +73,17 @@ def detect_stage(
     # Pattern match against campaign name
     campaign_lower = campaign_name.lower()
 
+    # Check for explicit _TOFU, _MOFU, _BOFU suffixes first
+    if "_tofu" in campaign_lower:
+        logger.debug(f"Campaign '{campaign_name}' matched explicit _TOFU suffix")
+        return ("tofu", 0.8)
+    if "_mofu" in campaign_lower:
+        logger.debug(f"Campaign '{campaign_name}' matched explicit _MOFU suffix")
+        return ("mofu", 0.8)
+    if "_bofu" in campaign_lower:
+        logger.debug(f"Campaign '{campaign_name}' matched explicit _BOFU suffix")
+        return ("bofu", 0.8)
+
     # Check BOFU patterns first (most specific: conversion, purchase, lead)
     if _matches_patterns(campaign_lower, BOFU_PATTERNS):
         logger.debug(f"Campaign '{campaign_name}' matched BOFU patterns")

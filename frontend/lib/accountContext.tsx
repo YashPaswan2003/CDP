@@ -88,9 +88,21 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [accounts, setAccounts] = useState<ClientAccount[]>(MOCK_ACCOUNTS);
   const [isLoading, setIsLoading] = useState(true);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
 
-  // Initialize user and account from localStorage on mount
+  // Fetch accounts from API on mount
   useEffect(() => {
+    const initializeAccounts = async () => {
+      await refreshAccounts();
+      setAccountsLoaded(true);
+    };
+    initializeAccounts();
+  }, []);
+
+  // Initialize user and account from localStorage AFTER accounts are loaded
+  useEffect(() => {
+    if (!accountsLoaded) return; // Wait for accounts to load from API
+
     const storedUserId = localStorage.getItem("ethinos_user_id") || "user-001";
     const storedAccountId = localStorage.getItem("ethinos_account_id");
 
@@ -101,12 +113,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const defaultAccountId =
       user.role === "admin" ? "ethinos" : user.accessibleAccountIds[0] || "kotak-mf";
 
-    // Validate stored account ID exists in accounts, otherwise use default
-    const validStored = storedAccountId && accounts.find(a => a.id === storedAccountId);
-    setSelectedAccountId(validStored ? storedAccountId : defaultAccountId);
-
+    // Admin always starts at master account; non-admin respects stored preference
+    let selectedId = defaultAccountId;
+    if (user.role !== "admin" && storedAccountId) {
+      const storedAccount = accounts.find(a => a.id === storedAccountId);
+      if (storedAccount && user.accessibleAccountIds.includes(storedAccountId)) {
+        selectedId = storedAccountId;
+      }
+    }
+    setSelectedAccountId(selectedId);
     setIsLoading(false);
-  }, [accounts]);
+  }, [accountsLoaded, accounts]);
 
   // Get accounts accessible to the current user
   const accessibleAccounts = currentUser
@@ -133,15 +150,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   // Refresh accounts list from API (or mock)
   const refreshAccounts = async () => {
     try {
-      // TODO: Replace with real API call to GET /api/accounts
-      // const res = await fetch('/api/accounts');
-      // const newAccounts = await res.json();
-      // setAccounts(newAccounts);
-
-      // For now, just trigger a state update with mock data
-      setAccounts([...MOCK_ACCOUNTS]);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/accounts`);
+      if (res.ok) {
+        const data = await res.json();
+        // Map API response to ClientAccount shape
+        const apiAccounts: ClientAccount[] = data.map((a: Record<string, any>) => ({
+          id: a.id,
+          name: a.name,
+          industry: a.industry || "Unknown",
+          currency: (a.currency as ClientAccount["currency"]) || "INR",
+          platforms: Array.isArray(a.platforms) ? a.platforms : (a.platforms?.split(",") || ["google"]) as ClientAccount["platforms"],
+          clientType: (a.client_type as ClientAccount["clientType"]) || "web",
+          brandColors: {
+            primary: a.brand_primary || "#003f5c",
+            secondary: a.brand_secondary || "#954e9b",
+            accent: a.brand_accent || "#ffa600",
+          },
+        }));
+        setAccounts(apiAccounts.length > 0 ? apiAccounts : MOCK_ACCOUNTS);
+      } else {
+        console.warn("Failed to fetch accounts from API, using mock data");
+        setAccounts([...MOCK_ACCOUNTS]);
+      }
     } catch (error) {
-      console.error("Failed to refresh accounts:", error);
+      console.warn("Failed to load accounts from API, using mock data:", error);
+      setAccounts([...MOCK_ACCOUNTS]);
     }
   };
 

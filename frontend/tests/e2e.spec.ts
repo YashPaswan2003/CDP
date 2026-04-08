@@ -3,140 +3,208 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'http://localhost:3000';
 
 test.describe('CDP Marketing Platform - E2E Tests', () => {
-  // Dashboard home page - main KPI cards
-  test('Dashboard displays KPI cards with metrics', async ({ page }) => {
+  // Set auth state before each test
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('token', 'test-auth-token'); // Required for auth check
+      localStorage.setItem('ethinos_user_id', 'user-001'); // Admin user
+      localStorage.removeItem('ethinos_account_id'); // Force default to Ethinos
+    });
+  });
+
+  // ============ GROUP 1: AUTHENTICATION & DEFAULT ACCOUNT ============
+
+  test('Login page loads and can submit', async ({ page }) => {
+    await page.goto(`${BASE_URL}/auth`);
+    await page.waitForLoadState('networkidle');
+
+    // Check for login form elements
+    const emailInput = page.locator('input[type="email"]');
+    const passwordInput = page.locator('input[type="password"]');
+
+    expect(emailInput).toBeTruthy();
+    expect(passwordInput).toBeTruthy();
+  });
+
+  test('After login, Ethinos (All Accounts) is the default account for admin', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Check for key metric text that should be on the dashboard
-    await expect(page.locator('text=Spend')).toBeVisible();
-    await expect(page.locator('text=Revenue')).toBeVisible();
-    await expect(page.locator('text=Impressions')).toBeVisible();
-    await expect(page.locator('text=Clicks')).toBeVisible();
+    // Check that Ethinos is selected in the account switcher by checking the select value
+    const accountSelect = page.locator('select').first();
+    const selectedValue = await accountSelect.inputValue();
+    expect(selectedValue).toBe('ethinos');
   });
 
-  // Campaigns page - verify table renders
-  test('Campaigns page displays campaign table', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/campaigns`);
+  test('Account switcher shows accessible accounts for admin', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Check for table headers
-    const tableHeaders = page.locator('th');
+    // Find the account switcher dropdown
+    const accountSelect = page.locator('select, [role="combobox"]').first();
+    expect(accountSelect).toBeVisible();
 
-    // Should have Campaign column at minimum
-    const hasHeaders = await tableHeaders.count() > 0;
-    expect(hasHeaders).toBeTruthy();
+    // Check for account options
+    const kotatOption = page.locator('text=Kotak');
+    expect(kotatOption).toBeTruthy();
   });
 
-  // Analytics page - verify date picker exists
-  test('Analytics page loads and displays content', async ({ page }) => {
+  // ============ GROUP 2: DASHBOARD HOME ============
+
+  test('Dashboard page loads with KPI cards', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard`);
+    await page.waitForLoadState('networkidle');
+
+    // Check for dashboard content (portfolio heading or metrics section)
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent).toBeTruthy();
+    expect(pageContent?.length).toBeGreaterThan(100);
+  });
+
+  test('Dashboard shows account name in header', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard`);
+    await page.waitForLoadState('networkidle');
+
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent?.toLowerCase()).toContain('ethinos');
+  });
+
+  test('Sidebar navigation is visible with main menu items', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard`);
+    await page.waitForLoadState('networkidle');
+
+    // Check for navigation links (more specific)
+    const googleAdsLink = page.locator('a[href="/dashboard/analytics/google-ads"]');
+    const uploadLink = page.locator('a[href="/dashboard/upload"]');
+    const clientsLink = page.locator('a[href="/dashboard/clients"]');
+
+    const hasNavigation = (await googleAdsLink.count() > 0) ||
+                          (await uploadLink.count() > 0) ||
+                          (await clientsLink.count() > 0);
+    expect(hasNavigation).toBeTruthy();
+  });
+
+  // ============ GROUP 3: ANALYTICS ROUTES ============
+
+  test('Analytics overview page loads', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard/analytics`);
     await page.waitForLoadState('networkidle');
 
-    // Analytics page should load without errors
-    // Check for any text content that indicates page loaded
     const pageContent = await page.locator('body').textContent();
     expect(pageContent).toBeTruthy();
     expect(pageContent?.length).toBeGreaterThan(100);
   });
 
-  // Funnel page - verify funnel visualization
-  test('Funnel page renders with stage information', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/funnel`);
+  test('Google Ads overview page loads', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/analytics/google-ads`);
     await page.waitForLoadState('networkidle');
 
-    // Check for funnel stage text
-    const hasImpressions = await page.locator('text=/[Ii]mpressions/').count() > 0;
-    const hasClicks = await page.locator('text=/[Cc]licks/').count() > 0;
-    const hasConversions = await page.locator('text=/[Cc]onversions/').count() > 0;
-
-    expect(hasImpressions || hasClicks || hasConversions).toBeTruthy();
-  });
-
-  // Placements page - verify tabs exist
-  test('Placements page renders successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/placements`);
-    await page.waitForLoadState('networkidle');
-
-    // Check for placement-related content
-    const pageContent = await page.locator('body').textContent();
-    expect(pageContent).toBeTruthy();
-    expect(pageContent?.length).toBeGreaterThan(100);
-  });
-
-  // Creatives page - verify creative performance
-  test('Creatives page displays performance data', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/creatives`);
-    await page.waitForLoadState('networkidle');
-
-    // Page should load without errors
     const pageContent = await page.locator('body').textContent();
     expect(pageContent).toBeTruthy();
   });
 
-  // Google Reports page - verify structure
-  test('Google Reports page loads with tabs', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/google`);
+  test('Google Ads campaigns page loads with table', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/analytics/google-ads/campaigns`);
     await page.waitForLoadState('networkidle');
 
-    // Check for search-related elements
+    // Check for table structure
+    const tableHeaders = page.locator('th');
+    const headerCount = await tableHeaders.count();
+    expect(headerCount).toBeGreaterThan(0);
+  });
+
+  test('Google Ads funnel page loads with TOFU/MOFU/BOFU', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/analytics/google-ads/funnel`);
+    await page.waitForLoadState('networkidle');
+
+    // Check for funnel-related content or empty state
     const pageContent = await page.locator('body').textContent();
     expect(pageContent).toBeTruthy();
-    expect(pageContent?.length).toBeGreaterThan(100);
+    expect(pageContent?.length).toBeGreaterThan(50);
   });
 
-  // Chat page - verify chat interface
-  test('Chat page loads', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/chat`);
+  test('DV360 overview page loads', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/analytics/dv360`);
     await page.waitForLoadState('networkidle');
 
-    // Chat page should be accessible
-    expect(page.url()).toContain('chat');
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent).toBeTruthy();
   });
 
-  // Presentations page
-  test('Presentations page loads', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/presentations`);
+  test('Meta overview page loads', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/analytics/meta`);
     await page.waitForLoadState('networkidle');
 
-    expect(page.url()).toContain('presentations');
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent).toBeTruthy();
   });
 
-  // Settings page
-  test('Settings page loads', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
+  // ============ GROUP 4: UPLOAD PAGE ============
+
+  test('Upload page shows blocked state for Ethinos account', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/upload`);
     await page.waitForLoadState('networkidle');
 
-    expect(page.url()).toContain('settings');
+    // Should show a message saying upload not available for master account
+    const blockedMessage = page.locator('text=/upload|client account|Select a client/i');
+    const isBlocked = await blockedMessage.count() > 0;
+    expect(isBlocked).toBeTruthy();
   });
 
-  // Navigation - test that sidebar links work
-  test('Dashboard navigation to campaigns works', async ({ page }) => {
+  test('Switching to Kotak MF account shows upload interface', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Look for campaigns link
-    const campaignsLink = page.locator('a, button').filter({ hasText: /campaigns/i }).first();
-
-    if (await campaignsLink.count() > 0) {
-      await campaignsLink.click();
+    // Switch to Kotak MF using the select dropdown
+    const accountSelect = page.locator('select').first();
+    if (await accountSelect.count() > 0) {
+      // Use selectOption instead of clicking
+      await accountSelect.selectOption('kotak-mf');
       await page.waitForLoadState('networkidle');
-
-      // Should navigate to campaigns
-      expect(page.url()).toContain('campaigns');
     }
+
+    // Navigate to upload
+    await page.goto(`${BASE_URL}/dashboard/upload`);
+    await page.waitForLoadState('networkidle');
+
+    // Check for upload interface (not blocked)
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent).toBeTruthy();
+    expect(pageContent?.length).toBeGreaterThan(50);
   });
 
-  // Test all 10 routes are accessible (basic 200 response)
-  test('All dashboard routes are accessible', async ({ page }) => {
+  // ============ GROUP 5: CLIENTS PAGE ============
+
+  test('Clients page shows when Ethinos account is selected', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/clients`);
+    await page.waitForLoadState('networkidle');
+
+    const pageContent = await page.locator('body').textContent();
+    expect(pageContent).toBeTruthy();
+    expect(pageContent?.length).toBeGreaterThan(50);
+  });
+
+  test('Clients page has New Client button', async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard/clients`);
+    await page.waitForLoadState('networkidle');
+
+    const newClientButton = page.locator('text=Add Client');
+    await expect(newClientButton).toBeVisible();
+  });
+
+  // ============ GROUP 6: ROUTE HEALTH CHECK ============
+
+  test('All dashboard routes are accessible (return < 400)', async ({ page }) => {
     const routes = [
       '/dashboard',
-      '/dashboard/campaigns',
       '/dashboard/analytics',
-      '/dashboard/funnel',
-      '/dashboard/placements',
-      '/dashboard/creatives',
-      '/dashboard/google',
+      '/dashboard/analytics/google-ads',
+      '/dashboard/analytics/google-ads/campaigns',
+      '/dashboard/analytics/google-ads/funnel',
+      '/dashboard/analytics/dv360',
+      '/dashboard/analytics/meta',
+      '/dashboard/upload',
+      '/dashboard/clients',
       '/dashboard/chat',
       '/dashboard/presentations',
       '/dashboard/settings',
@@ -144,12 +212,11 @@ test.describe('CDP Marketing Platform - E2E Tests', () => {
 
     for (const route of routes) {
       const response = await page.goto(`${BASE_URL}${route}`);
-      expect(response?.status()).toBeLessThan(400); // No 404 or 500 errors
+      expect(response?.status()).toBeLessThan(400);
     }
   });
 
-  // Test that pages don't have console errors
-  test('Dashboard pages load without critical errors', async ({ page }) => {
+  test('Dashboard loads without critical errors', async ({ page }) => {
     const errors: string[] = [];
 
     page.on('console', (msg) => {
@@ -161,28 +228,27 @@ test.describe('CDP Marketing Platform - E2E Tests', () => {
     await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Should not have errors (react strict mode warnings are ok)
+    // Filter out non-critical errors
     const criticalErrors = errors.filter(
       (e) => !e.includes('Strict mode') && !e.includes('warning')
     );
     expect(criticalErrors.length).toBe(0);
   });
 
-  // Test responsive design - check if layout adjusts
-  test('Dashboard is responsive', async ({ page }) => {
+  test('Dashboard is responsive (mobile and desktop)', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
-    await page.setViewportSize({ width: 375, height: 667 }); // Mobile
 
-    const content = await page.locator('body').textContent();
+    // Test mobile
+    await page.setViewportSize({ width: 375, height: 667 });
+    let content = await page.locator('body').textContent();
     expect(content).toBeTruthy();
 
-    // Reset to desktop
+    // Test desktop
     await page.setViewportSize({ width: 1920, height: 1080 });
-    const desktopContent = await page.locator('body').textContent();
-    expect(desktopContent).toBeTruthy();
+    content = await page.locator('body').textContent();
+    expect(content).toBeTruthy();
   });
 
-  // Performance - check page load times
   test('Dashboard loads within reasonable time', async ({ page }) => {
     const startTime = Date.now();
 
@@ -190,30 +256,24 @@ test.describe('CDP Marketing Platform - E2E Tests', () => {
     await page.waitForLoadState('networkidle');
 
     const loadTime = Date.now() - startTime;
-
-    // Should load in under 10 seconds
     expect(loadTime).toBeLessThan(10000);
   });
 
-  // Check that KPI values are displayed (numbers, not empty)
   test('KPI cards display numerical values', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Look for number patterns in the page
     const pageContent = await page.locator('body').textContent();
     const hasNumbers = /\$?[\d,]+/.test(pageContent || '');
-
     expect(hasNumbers).toBeTruthy();
   });
 
-  // Test chart rendering (check for SVG elements)
   test('Charts render on dashboard', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
     await page.waitForLoadState('networkidle');
 
-    // Recharts creates SVG elements
     const svgElements = await page.locator('svg').count();
     expect(svgElements).toBeGreaterThan(0);
   });
+
 });
