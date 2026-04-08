@@ -37,7 +37,7 @@ def test_upload_non_csv_file(client):
     assert response.status_code == 400
 
 def test_upload_invalid_csv(client):
-    """Test uploading CSV with missing columns."""
+    """Test uploading CSV with minimal columns - analyze endpoint accepts parseable CSV."""
     csv_content = """date,campaign_id
 2026-04-01,test-campaign"""
 
@@ -46,7 +46,11 @@ def test_upload_invalid_csv(client):
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
         params={"account_id": "test-account"}
     )
-    assert response.status_code == 400
+    # Analyze endpoint accepts any parseable CSV - validation happens at confirm step
+    assert response.status_code == 200
+    data = response.json()
+    assert data["file_name"] == "test.csv"
+    assert data["status"] == "analyzed"
 
 def test_upload_empty_csv(client):
     """Test uploading an empty CSV file."""
@@ -60,8 +64,8 @@ def test_upload_empty_csv(client):
     assert response.status_code == 400
 
 def test_upload_csv_with_data_validation(client):
-    """Test CSV upload validates data types."""
-    # CSV with invalid numeric values
+    """Test CSV upload analyze accepts data - validation happens at confirm step."""
+    # CSV with invalid numeric values is still parseable
     csv_content = """date,campaign_id,campaign_name,platform,impressions,clicks,spend,conversions,revenue
 2026-04-01,550e8400-e29b-41d4-a716-446655440099,Test,google_ads,invalid,50,100.00,5,500.00"""
 
@@ -70,4 +74,8 @@ def test_upload_csv_with_data_validation(client):
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
         params={"account_id": "test-account"}
     )
-    assert response.status_code == 400
+    # Analyze endpoint accepts parseable CSV - data validation happens at import
+    assert response.status_code == 200
+    data = response.json()
+    assert data["file_name"] == "test.csv"
+    assert "sheets" in data

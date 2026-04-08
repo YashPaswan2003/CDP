@@ -132,27 +132,40 @@ async def analyze_upload(
                 "row_count": sheet_info["rows"],
                 "columns": list(df.columns),
                 "column_mapping": {k: v["canonical"] for k, v in col_mapping.items()},
-                "unmapped_columns": [col for col, meta in col_mapping.items() if meta["status"] == "unmapped"],
+                "unmapped_columns": [col for col, meta in col_mapping.items() if meta.get("canonical") is None],
                 "first_rows": df.head(3).values.tolist(),
             }
 
         logger.info(f"Upload {upload_id} analyzed: {len(included_sheets)} sheets, {len(skipped_sheets)} skipped")
 
-        return AnalyzeResponse(
-            upload_id=upload_id,
-            status="analyzed",
-            file_name=file.filename,
-            sheets={
-                "included": included_sheets,
-                "skipped": skipped_sheets,
-                "summaries": sheet_summaries,
-            }
-        )
+        try:
+            response = AnalyzeResponse(
+                upload_id=upload_id,
+                status="analyzed",
+                file_name=file.filename,
+                sheets={
+                    "included": included_sheets,
+                    "skipped": skipped_sheets,
+                    "summaries": sheet_summaries,
+                }
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Failed to create AnalyzeResponse: {e}")
+            logger.error(f"included_sheets: {included_sheets}")
+            logger.error(f"skipped_sheets: {skipped_sheets}")
+            raise HTTPException(status_code=500, detail=f"Response creation failed: {str(e)}")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        # Return 400 for parsing errors, 500 for other errors
+        from app.services.ingestion.parser import ParsingError
+        if isinstance(e, ParsingError):
+            raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -364,16 +377,23 @@ def call_claude_for_file_analysis(
     if not shutil.which("claude"):
         # Mock response when claude CLI not available
         logger.info("Using mock Claude response (claude CLI not available)")
+        # Build column suggestions from available sheets
+        column_suggestions = {}
+        for sheet in sheets_info:
+            for col in sheet.get("columns", [])[:5]:
+                canonical = col.lower().replace(" ", "_")
+                column_suggestions[col] = canonical
+
+        # Build funnel mapping (default to TOFU for first sheet, BOFU for rest)
+        funnel_mapping = {}
+        for i, sheet in enumerate(sheets_info):
+            sheet_name = sheet.get("name", f"Sheet{i+1}")
+            funnel_mapping[sheet_name] = "tofu" if i == 0 else "bofu"
+
         return {
             "summary": f"File '{file_name}' contains marketing data with {len(sheets_info)} sheets.",
-            "funnel_mapping": {
-                sheets_info[0]["name"]: "tofu" if len(sheets_info) > 0 else "bofu"
-            } if sheets_info else {},
-            "column_suggestions": {
-                col: col.lower().replace(" ", "_")
-                for sheet in sheets_info
-                for col in sheet.get("columns", [])[:5]
-            },
+            "funnel_mapping": funnel_mapping,
+            "column_suggestions": column_suggestions,
             "clarifying_question": None
         }
 
@@ -446,6 +466,12 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         result.setdefault("funnel_mapping", {})
         result.setdefault("column_suggestions", {})
         # clarifying_question is optional
+
+        # Filter out None values from dicts (Claude sometimes returns null for unknown values)
+        if isinstance(result.get("funnel_mapping"), dict):
+            result["funnel_mapping"] = {k: v for k, v in result["funnel_mapping"].items() if v is not None}
+        if isinstance(result.get("column_suggestions"), dict):
+            result["column_suggestions"] = {k: v for k, v in result["column_suggestions"].items() if v is not None}
 
         logger.info(f"Claude analysis successful: {len(result.get('column_suggestions', {}))} column mappings suggested")
         return result
