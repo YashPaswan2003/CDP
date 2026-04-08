@@ -35,7 +35,7 @@ def detect_funnel_stage(
         (stage, confidence) where stage in ["tofu", "mofu", "bofu", "unknown"]
         and confidence in [0.0, 1.0]
     """
-    # Check explicit funnel column first
+    # Check explicit funnel column first (highest confidence)
     if funnel_col_value:
         val_lower = str(funnel_col_value).lower().strip()
         if "tofu" in val_lower:
@@ -45,9 +45,16 @@ def detect_funnel_stage(
         if "bofu" in val_lower:
             return "bofu", 1.0
 
-    # Pattern match on campaign name
+    # Check for explicit funnel stage keywords in campaign name (_TOFU, _MOFU, _BOFU)
     name_lower = campaign_name.lower()
+    if "_tofu" in name_lower or name_lower.endswith("tofu"):
+        return "tofu", 0.95
+    if "_mofu" in name_lower or name_lower.endswith("mofu"):
+        return "mofu", 0.95
+    if "_bofu" in name_lower or name_lower.endswith("bofu"):
+        return "bofu", 0.95
 
+    # Pattern match on campaign name (lower confidence)
     for pattern in TOFU_PATTERNS:
         if pattern in name_lower:
             return "tofu", 0.8

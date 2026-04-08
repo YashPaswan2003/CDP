@@ -3,7 +3,7 @@ from .parser import parse_file
 from .sheet_detector import detect_sheet_type, classify_sheets
 from .column_mapper import map_columns
 from .funnel_detector import detect_funnel_stage
-from .normalizer import normalize_row
+from .normalizer import normalize_row, normalize_value
 from .conflict_detector import detect_conflicts
 from .importer import import_metrics
 
@@ -14,6 +14,7 @@ __all__ = [
     "map_columns",
     "detect_funnel_stage",
     "normalize_row",
+    "normalize_value",
     "detect_conflicts",
     "import_metrics",
 ]

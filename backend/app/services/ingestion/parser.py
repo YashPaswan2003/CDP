@@ -2,7 +2,7 @@
 import pandas as pd
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 logger = logging.getLogger("ingestion")
 
@@ -79,18 +79,57 @@ def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
                         break
 
                 if rows:
-                    # First row is headers
-                    headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(rows[0])]
-                    data = rows[1:]
-                    df = pd.DataFrame(data, columns=headers)
-                    df = df.astype(str)
-                    sheets[sheet_name] = df
+                    # Find first non-empty row as headers
+                    header_idx = _find_header_row(rows)
+                    headers_row = rows[header_idx]
+                    headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(headers_row)]
+                    data = rows[header_idx + 1:]
+
+                    if data:  # Only create DataFrame if there's data after headers
+                        df = pd.DataFrame(data, columns=headers)
+                        df = df.astype(str)
+                        sheets[sheet_name] = df
+                    else:
+                        # Empty sheet, create with headers only
+                        df = pd.DataFrame(columns=headers)
+                        sheets[sheet_name] = df
 
         logger.info(f"Parsed {len(sheets)} sheets from {file_path.name}")
         return sheets
     except Exception as e:
         logger.error(f"Failed to parse XLSB: {e}")
         raise
+
+
+def _find_header_row(rows: List) -> int:
+    """Find the header row by looking for row with most non-None values.
+
+    Header rows typically have many values filled in (column names).
+    Skips empty rows at the beginning and finds the densest non-empty row.
+
+    Args:
+        rows: List of rows, where each row is a list of cell values
+
+    Returns:
+        Index of the likely header row (row with most non-None values)
+    """
+    max_non_none = 0
+    header_idx = 0
+
+    for idx, row in enumerate(rows):
+        # Count non-None values in this row
+        non_none_count = sum(1 for cell in row if cell is not None)
+
+        # Header row should have many values (at least 50% of columns non-None)
+        if non_none_count > max_non_none:
+            max_non_none = non_none_count
+            header_idx = idx
+
+        # Early exit if we find a row that's more than 80% full
+        if non_none_count > len(row) * 0.8:
+            return idx
+
+    return header_idx
 
 
 def get_sheet_preview(df: pd.DataFrame, n_rows: int = 5) -> Dict:

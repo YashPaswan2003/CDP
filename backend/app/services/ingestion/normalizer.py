@@ -24,11 +24,11 @@ def normalize_value(value: Any, field_type: str) -> Any:
 
     try:
         if field_type == "int":
-            return int(float(value_str))  # Handle "1.0" -> 1
+            return int(float(_strip_currency(value_str)))
         elif field_type == "float":
-            return float(value_str)
+            return float(_strip_currency(value_str))
         elif field_type == "decimal":
-            return float(value_str)  # DuckDB uses float for DECIMAL
+            return float(_strip_currency(value_str))  # DuckDB uses float for DECIMAL
         elif field_type == "date":
             return _parse_date(value_str)
         elif field_type == "string":
@@ -38,6 +38,20 @@ def normalize_value(value: Any, field_type: str) -> Any:
     except (ValueError, TypeError) as e:
         logger.warning(f"Failed to normalize '{value}' as {field_type}: {e}")
         return None
+
+
+def _strip_currency(value_str: str) -> str:
+    """Strip currency symbols and commas from numeric strings.
+
+    Converts: ₹38,419.50 → 38419.50
+    Converts: $38,419.50 → 38419.50
+    Converts: €38,419.50 → 38419.50
+    """
+    # Remove common currency symbols
+    value_str = value_str.lstrip('₹$€£¥')
+    # Remove thousands separators (commas)
+    value_str = value_str.replace(',', '')
+    return value_str.strip()
 
 
 def _parse_date(date_str: str) -> Optional[str]:
