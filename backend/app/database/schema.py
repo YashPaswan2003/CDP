@@ -274,13 +274,114 @@ def create_tables(conn):
         )
     """)
 
+    # ========== INGESTION ENGINE TABLES ==========
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS uploads (
+            id            VARCHAR PRIMARY KEY,
+            account_id    VARCHAR NOT NULL,
+            uploaded_by   VARCHAR,
+            file_name     VARCHAR NOT NULL,
+            file_path     VARCHAR NOT NULL,
+            file_type     VARCHAR(20),
+            status        VARCHAR(30) DEFAULT 'pending',
+            rows_imported INTEGER DEFAULT 0,
+            conflicts_count INTEGER DEFAULT 0,
+            created_at    TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS upload_versions (
+            id                 VARCHAR PRIMARY KEY,
+            upload_id          VARCHAR NOT NULL,
+            version_number     INTEGER NOT NULL,
+            file_hash          VARCHAR(64),
+            status             VARCHAR(30),
+            conflicts_detected INTEGER DEFAULT 0,
+            created_at         TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS campaign_metrics (
+            id                VARCHAR PRIMARY KEY,
+            account_id        VARCHAR NOT NULL,
+            upload_id         VARCHAR,
+            version_id        VARCHAR,
+            date_from         DATE,
+            date_to           DATE,
+            period_type       VARCHAR(10),
+            platform          VARCHAR(20),
+            campaign_name     VARCHAR(500),
+            campaign_id       VARCHAR(100),
+            adset_name        VARCHAR(500),
+            adset_id          VARCHAR(100),
+            ad_name           VARCHAR(500),
+            funnel_stage      VARCHAR(10),
+            category          VARCHAR(100),
+            city              VARCHAR(100),
+            theme             VARCHAR(100),
+            impressions       BIGINT,
+            reach             BIGINT,
+            clicks            INTEGER,
+            ctr               DECIMAL(8,4),
+            cpc               DECIMAL(10,2),
+            cpm               DECIMAL(10,2),
+            cost              DECIMAL(12,2),
+            stage_values      JSON,
+            data_type         VARCHAR(20),
+            is_current_version BOOLEAN DEFAULT TRUE,
+            created_at        TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS upload_conflicts (
+            id            VARCHAR PRIMARY KEY,
+            upload_id     VARCHAR NOT NULL,
+            metric_id     VARCHAR,
+            field_name    VARCHAR(100),
+            old_value     TEXT,
+            new_value     TEXT,
+            pct_change    DECIMAL(8,2),
+            resolved_by   VARCHAR,
+            resolution    VARCHAR(20),
+            resolved_at   TIMESTAMP
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS column_mappings (
+            id               VARCHAR PRIMARY KEY,
+            account_id       VARCHAR NOT NULL,
+            raw_column_name  VARCHAR(200),
+            canonical_field  VARCHAR(100),
+            confidence       DECIMAL(4,2),
+            source           VARCHAR(20),
+            created_at       TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS funnel_stages (
+            id               VARCHAR PRIMARY KEY,
+            account_id       VARCHAR NOT NULL,
+            name             VARCHAR(50) NOT NULL,
+            label            VARCHAR(100) NOT NULL,
+            order_index      INTEGER NOT NULL,
+            is_revenue_stage BOOLEAN DEFAULT FALSE,
+            created_at       TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
     conn.commit()
 
 
 def drop_all_tables(conn):
     """Drop all tables. Use only in dev/testing."""
     tables = [
-        "upload_history", "pmax_channels", "search_terms", "creatives",
+        "funnel_stages", "column_mappings", "upload_conflicts", "campaign_metrics",
+        "upload_versions", "uploads", "upload_history", "pmax_channels", "search_terms", "creatives",
         "placements", "demographics", "geo_data", "daily_metrics",
         "line_items", "insertion_orders", "ad_sets", "ad_groups",
         "campaigns", "auth_tokens", "user_accounts", "users", "accounts"
