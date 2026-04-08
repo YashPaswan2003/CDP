@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.connection import init_db, get_connection
 from app.database.seed import seed_database
-from app.routes import auth, upload, dashboard, chat
+from app.routes import auth, upload, dashboard, chat, analytics
 
 # Configure logging
 log_dir = settings.LOG_DIR
@@ -48,15 +48,15 @@ async def lifespan(app: FastAPI):
 
     # Check if data needs loading
     conn = get_connection()
-    result = conn.execute("SELECT COUNT(*) as count FROM metrics").fetchall()
-    metrics_count = result[0][0]
+    result = conn.execute("SELECT COUNT(*) as count FROM campaigns").fetchall()
+    campaigns_count = result[0][0]
     conn.close()
 
-    if metrics_count == 0:
+    if campaigns_count == 0:
         api_logger.info("Loading sample data...")
         seed_database()
 
-    api_logger.info(f"Database ready. Metrics records: {metrics_count}")
+    api_logger.info(f"Database ready. Campaigns records: {campaigns_count}")
 
     yield
 
@@ -71,10 +71,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
+# Add CORS middleware with environment-driven origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,6 +85,7 @@ app.include_router(auth.router)
 app.include_router(upload.router)
 app.include_router(dashboard.router)
 app.include_router(chat.router)
+app.include_router(analytics.router)
 
 # Health check endpoint
 @app.get("/health")
@@ -96,63 +97,8 @@ def health():
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
-# Database query endpoint for testing
-@app.get("/api/metrics/count")
-def get_metrics_count():
-    """Get total metrics count."""
-    conn = get_connection()
-    result = conn.execute("SELECT COUNT(*) as count FROM metrics").fetchall()
-    count = result[0][0]
-    conn.close()
-
-    api_logger.info(f"GET /api/metrics/count - returned {count}")
-
-    return {"total_metrics": count}
-
-@app.get("/api/clients")
-def get_clients():
-    """Get all clients."""
-    conn = get_connection()
-    result = conn.execute("SELECT id, name, industry FROM clients").fetchall()
-    conn.close()
-
-    clients = [{"id": str(row[0]), "name": row[1], "industry": row[2]} for row in result]
-
-    api_logger.info(f"GET /api/clients - returned {len(clients)} clients")
-
-    return {"clients": clients}
-
-@app.get("/api/campaigns")
-def get_campaigns(client_id: str = None):
-    """Get campaigns, optionally filtered by client."""
-    conn = get_connection()
-
-    if client_id:
-        result = conn.execute(
-            "SELECT id, client_id, platform, name, budget FROM campaigns WHERE client_id = ?",
-            [client_id]
-        ).fetchall()
-    else:
-        result = conn.execute(
-            "SELECT id, client_id, platform, name, budget FROM campaigns"
-        ).fetchall()
-
-    conn.close()
-
-    campaigns = [
-        {
-            "id": str(row[0]),
-            "client_id": str(row[1]),
-            "platform": row[2],
-            "name": row[3],
-            "budget": float(row[4]) if row[4] else 0
-        }
-        for row in result
-    ]
-
-    api_logger.info(f"GET /api/campaigns - returned {len(campaigns)} campaigns")
-
-    return {"campaigns": campaigns}
+# Analytics endpoints are now in analytics.py router
+# Legacy test endpoints have been removed - use /api/analytics/* instead
 
 if __name__ == "__main__":
     import uvicorn

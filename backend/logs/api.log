@@ -2,3 +2,164 @@
 {"timestamp": "2026-04-06T10:04:23.986318Z", "level": "INFO", "source": "api", "message": "GET /api/metrics/count - returned 110"}
 {"timestamp": "2026-04-06T10:04:23.992644Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
 {"timestamp": "2026-04-06T10:04:23.998676Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
+{"timestamp": "2026-04-06T10:09:27.106995Z", "level": "INFO", "source": "api", "message": "User registered: newuser@example.com"}
+{"timestamp": "2026-04-06T10:09:27.111420Z", "level": "INFO", "source": "api", "message": "User registered: duplicate@example.com"}
+{"timestamp": "2026-04-06T10:09:27.113271Z", "level": "ERROR", "source": "api", "message": "Registration failed: duplicate@example.com already exists"}
+{"timestamp": "2026-04-06T10:09:27.115627Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:09:27.118013Z", "level": "ERROR", "source": "api", "message": "Login failed: Invalid password for demo@example.com"}
+{"timestamp": "2026-04-06T10:09:27.120423Z", "level": "ERROR", "source": "api", "message": "Login failed: nonexistent@example.com not found"}
+{"timestamp": "2026-04-06T10:09:27.122644Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:09:27.124230Z", "level": "INFO", "source": "api", "message": "User logged out"}
+{"timestamp": "2026-04-06T10:09:27.126435Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: How is my advertising spend performing?"}
+{"timestamp": "2026-04-06T10:09:27.128361Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: What are my conversion rates?"}
+{"timestamp": "2026-04-06T10:09:27.130329Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440010: Tell me about my campaigns"}
+{"timestamp": "2026-04-06T10:09:27.132141Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Hello"}
+{"timestamp": "2026-04-06T10:09:27.133966Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Test message"}
+{"timestamp": "2026-04-06T10:09:28.192826Z", "level": "INFO", "source": "api", "message": "GET /api/metrics/count - returned 110"}
+{"timestamp": "2026-04-06T10:09:28.195432Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
+{"timestamp": "2026-04-06T10:09:28.198174Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
+{"timestamp": "2026-04-06T10:09:28.205327Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: Invalid Input Error: Attempting to execute an unsuccessful or closed pending query result\nError: Conversion Error: Could not convert string 'test-campaign-1' to INT128"}
+{"timestamp": "2026-04-06T10:09:28.206373Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:09:28.210630Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:09:28.212748Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:09:28.215034Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:09:28.217141Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: invalid literal for int() with base 10: 'invalid'"}
+{"timestamp": "2026-04-06T10:09:28.217427Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:24:40.649118Z", "level": "INFO", "source": "api", "message": "User registered: newuser@example.com"}
+{"timestamp": "2026-04-06T10:24:40.653192Z", "level": "INFO", "source": "api", "message": "User registered: duplicate@example.com"}
+{"timestamp": "2026-04-06T10:24:40.654915Z", "level": "ERROR", "source": "api", "message": "Registration failed: duplicate@example.com already exists"}
+{"timestamp": "2026-04-06T10:24:40.657281Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:24:40.659659Z", "level": "ERROR", "source": "api", "message": "Login failed: Invalid password for demo@example.com"}
+{"timestamp": "2026-04-06T10:24:40.662029Z", "level": "ERROR", "source": "api", "message": "Login failed: nonexistent@example.com not found"}
+{"timestamp": "2026-04-06T10:24:40.664355Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:24:40.665946Z", "level": "INFO", "source": "api", "message": "User logged out"}
+{"timestamp": "2026-04-06T10:24:40.667946Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: How is my advertising spend performing?"}
+{"timestamp": "2026-04-06T10:24:40.669762Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: What are my conversion rates?"}
+{"timestamp": "2026-04-06T10:24:40.671765Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440010: Tell me about my campaigns"}
+{"timestamp": "2026-04-06T10:24:40.673517Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Hello"}
+{"timestamp": "2026-04-06T10:24:40.675334Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Test message"}
+{"timestamp": "2026-04-06T10:24:40.709611Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:24:40.726334Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:24:40.747303Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:24:40.759860Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440010 - returned 5 campaigns"}
+{"timestamp": "2026-04-06T10:24:40.770192Z", "level": "INFO", "source": "api", "message": "GET /api/metrics/count - returned 110"}
+{"timestamp": "2026-04-06T10:24:40.776174Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
+{"timestamp": "2026-04-06T10:24:40.781614Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
+{"timestamp": "2026-04-06T10:24:40.792442Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: Constraint Error: Violates foreign key constraint because key \"id: 550e8400-e29b-41d4-a716-446655440099\" does not exist in the referenced table"}
+{"timestamp": "2026-04-06T10:24:40.792782Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:24:40.796466Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:24:40.798615Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:24:40.800689Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:24:40.805206Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: invalid literal for int() with base 10: 'invalid'"}
+{"timestamp": "2026-04-06T10:24:40.805504Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:25:21.222856Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: Constraint Error: Violates foreign key constraint because key \"id: 550e8400-e29b-41d4-a716-446655440099\" does not exist in the referenced table"}
+{"timestamp": "2026-04-06T10:25:21.223747Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:25:43.315482Z", "level": "INFO", "source": "api", "message": "User registered: newuser@example.com"}
+{"timestamp": "2026-04-06T10:25:43.320518Z", "level": "INFO", "source": "api", "message": "User registered: duplicate@example.com"}
+{"timestamp": "2026-04-06T10:25:43.322421Z", "level": "ERROR", "source": "api", "message": "Registration failed: duplicate@example.com already exists"}
+{"timestamp": "2026-04-06T10:25:43.325128Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:25:43.328064Z", "level": "ERROR", "source": "api", "message": "Login failed: Invalid password for demo@example.com"}
+{"timestamp": "2026-04-06T10:25:43.330688Z", "level": "ERROR", "source": "api", "message": "Login failed: nonexistent@example.com not found"}
+{"timestamp": "2026-04-06T10:25:43.333458Z", "level": "INFO", "source": "api", "message": "User logged in: demo@example.com"}
+{"timestamp": "2026-04-06T10:25:43.335615Z", "level": "INFO", "source": "api", "message": "User logged out"}
+{"timestamp": "2026-04-06T10:25:43.337865Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: How is my advertising spend performing?"}
+{"timestamp": "2026-04-06T10:25:43.339732Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: What are my conversion rates?"}
+{"timestamp": "2026-04-06T10:25:43.341916Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440010: Tell me about my campaigns"}
+{"timestamp": "2026-04-06T10:25:43.343824Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Hello"}
+{"timestamp": "2026-04-06T10:25:43.345695Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Test message"}
+{"timestamp": "2026-04-06T10:25:43.389740Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:25:43.406722Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:25:43.427943Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:25:43.440438Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440010 - returned 5 campaigns"}
+{"timestamp": "2026-04-06T10:25:43.449191Z", "level": "INFO", "source": "api", "message": "GET /api/metrics/count - returned 110"}
+{"timestamp": "2026-04-06T10:25:43.454375Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
+{"timestamp": "2026-04-06T10:25:43.459769Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
+{"timestamp": "2026-04-06T10:25:43.473638Z", "level": "INFO", "source": "api", "message": "CSV uploaded: test.csv - 2 rows imported"}
+{"timestamp": "2026-04-06T10:25:43.476442Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:25:43.478987Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:25:43.481513Z", "level": "ERROR", "source": "api", "message": "Upload failed: "}
+{"timestamp": "2026-04-06T10:25:43.487653Z", "level": "ERROR", "source": "api", "message": "Error importing row 2: invalid literal for int() with base 10: 'invalid'"}
+{"timestamp": "2026-04-06T10:25:43.490282Z", "level": "ERROR", "source": "api", "message": "Upload failed: TransactionContext Error: cannot rollback - no transaction is active"}
+{"timestamp": "2026-04-06T10:40:02.841685Z", "level": "INFO", "source": "api", "message": "Initializing database..."}
+{"timestamp": "2026-04-06T10:40:02.853477Z", "level": "INFO", "source": "api", "message": "Database ready. Metrics records: 112"}
+{"timestamp": "2026-04-06T10:42:00.465550Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@seo.com not found"}
+{"timestamp": "2026-04-06T10:42:14.118404Z", "level": "INFO", "source": "api", "message": "User registered: yash.paswan@ethinos.com"}
+{"timestamp": "2026-04-06T10:42:16.651136Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:16.670041Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:31.991112Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:32.006114Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:40.849259Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:40.866610Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:55.391751Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T10:42:55.407539Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:23:46.495145Z", "level": "INFO", "source": "api", "message": "User logged in: yash.paswan@ethinos.com"}
+{"timestamp": "2026-04-06T11:23:46.730837Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:23:46.746895Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:23:55.499008Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:23:55.515284Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:24:30.695358Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:24:30.712835Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:27:43.464861Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:27:43.479981Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:27:52.873268Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:27:52.891608Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:28:58.578391Z", "level": "INFO", "source": "api", "message": "Initializing database..."}
+{"timestamp": "2026-04-06T11:28:58.601627Z", "level": "INFO", "source": "api", "message": "Database ready. Metrics records: 112"}
+{"timestamp": "2026-04-06T11:44:11.099397Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:44:11.116829Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:48:16.622354Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: What is my best performing campaign?"}
+{"timestamp": "2026-04-06T11:51:42.943377Z", "level": "ERROR", "source": "api", "message": "Login failed: yash.paswan@ethinos.com not found"}
+{"timestamp": "2026-04-06T11:51:45.734046Z", "level": "ERROR", "source": "api", "message": "Login failed: yash.paswan@ethinos.com not found"}
+{"timestamp": "2026-04-06T11:52:31.270883Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:52:56.106772Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:52:58.597914Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:52:59.467951Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:52:59.634741Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:52:59.818473Z", "level": "ERROR", "source": "api", "message": "Login failed: admin@cdp.com not found"}
+{"timestamp": "2026-04-06T11:53:02.067809Z", "level": "INFO", "source": "api", "message": "User registered: admin@cdp.com"}
+{"timestamp": "2026-04-06T11:53:58.471951Z", "level": "INFO", "source": "api", "message": "User registered: test2@cdp.com"}
+{"timestamp": "2026-04-06T11:53:58.973338Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:53:58.994036Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:55:44.886574Z", "level": "INFO", "source": "api", "message": "User logged in: admin@cdp.com"}
+{"timestamp": "2026-04-06T11:55:45.191369Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:55:45.214739Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:57:24.916293Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T11:58:22.340762Z", "level": "INFO", "source": "api", "message": "GET /api/clients - returned 2 clients"}
+{"timestamp": "2026-04-06T11:58:29.701795Z", "level": "INFO", "source": "api", "message": "GET /api/campaigns - returned 11 campaigns"}
+{"timestamp": "2026-04-06T11:59:30.881817Z", "level": "INFO", "source": "api", "message": "User logged in: admin@cdp.com"}
+{"timestamp": "2026-04-06T12:00:40.188653Z", "level": "ERROR", "source": "api", "message": "Registration failed: admin@cdp.com already exists"}
+{"timestamp": "2026-04-06T12:00:40.195071Z", "level": "INFO", "source": "api", "message": "User logged in: admin@cdp.com"}
+{"timestamp": "2026-04-06T12:04:46.340226Z", "level": "INFO", "source": "api", "message": "User logged in: admin@cdp.com"}
+{"timestamp": "2026-04-06T12:04:47.470289Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:04:47.490270Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:05:39.501747Z", "level": "INFO", "source": "api", "message": "User logged in: admin@cdp.com"}
+{"timestamp": "2026-04-06T12:05:39.731319Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:05:39.748779Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:08:59.101854Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:08:59.123226Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:14:20.038324Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:14:20.093164Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:41:34.931147Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:41:34.951503Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:11.467820Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:11.491735Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:53.654616Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:53.671842Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:56.938755Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:42:56.954128Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:48:26.080842Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:48:26.100266Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:49:16.633134Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: Which are the top campaigns"}
+{"timestamp": "2026-04-06T12:49:38.414757Z", "level": "INFO", "source": "api", "message": "Chat request from client 550e8400-e29b-41d4-a716-446655440000: what are the conversions I am getting from this campaigns"}
+{"timestamp": "2026-04-06T12:50:05.119419Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-06T12:50:05.135102Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T05:49:41.256331Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T05:49:41.271284Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T06:06:01.090988Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T06:06:01.111738Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T06:13:00.259808Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T06:13:00.274466Z", "level": "INFO", "source": "api", "message": "GET /dashboard/550e8400-e29b-41d4-a716-446655440000 - returned 6 campaigns"}
+{"timestamp": "2026-04-07T10:26:49.256571Z", "level": "INFO", "source": "api", "message": "Shutting down..."}
+{"timestamp": "2026-04-07T10:26:51.006558Z", "level": "INFO", "source": "api", "message": "Initializing database..."}
+{"timestamp": "2026-04-07T10:26:51.114667Z", "level": "INFO", "source": "api", "message": "Database ready. Metrics records: 112"}
+{"timestamp": "2026-04-07T10:30:57.656443Z", "level": "INFO", "source": "api", "message": "Shutting down..."}

@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply m-0 p-0 box-border;
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply text-text-primary font-fira-sans overflow-x-hidden;
+  background: linear-gradient(135deg, #0a0e27 0%, #151a35 100%);
+  background-attachment: fixed;
+}
+
+/* Code/Heading typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-fira-code font-bold text-text-primary;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-base;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border-primary rounded hover:bg-primary-400;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary-500 text-white;
+}
+
+/* Input focus styling */
+input:focus,
+textarea:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-opacity-50;
+  border-color: #003f5c;
+}
+
+/* Button hover state */
+button {
+  @apply transition-all duration-200;
+}
+
+button:hover:not(:disabled) {
+  @apply opacity-90 scale-105;
+}
+
+button:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Cards */
+.card {
+  @apply rounded-lg p-4;
+  background-color: #151a35;
+  border: 1px solid #2a2f4a;
+}
+
+.card:hover {
+  border-color: rgba(0, 63, 92, 0.5);
+  background-color: #1f2947;
+  transition: all 200ms;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r bg-clip-text text-transparent;
+  background-image: linear-gradient(to right, #464c89, #ffa600);
+}
+
+/* Utility classes */
+.text-secondary {
+  color: #a0a5b8;
+}
+
+.text-tertiary {
+  color: #6b7280;
+}
+
+.bg-subtle {
+  background-color: #151a35;
+}
+
+.border-subtle {
+  border-color: #2a2f4a;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply outline-none ring-2;
+  border-color: #003f5c;
+  box-shadow: 0 0 0 2px rgba(0, 63, 92, 0.5);
+}

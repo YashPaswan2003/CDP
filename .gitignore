@@ -9,6 +9,11 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/.DS_Store
+frontend/test-results/
+frontend/playwright-report/
+frontend/skills/
+frontend/TEST_RESULTS.md
+frontend/--content=app
 
 # Backend
 backend/__pycache__/
@@ -42,6 +47,22 @@ backend/.coverage
 backend/htmlcov/
 backend/.tox/
 backend/.env
+backend/logs/
+
+# Screenshots & test artifacts
+screenshots/
+*.png
+*.jpg
+*.jpeg
+
+# Tool session artifacts
+.playwright-mcp/
+logs/
+
+# Client data / sensitive files
+QI SPine/
+*.xlsx
+*.xlsb
 
 # DuckDB
 *.duckdb
