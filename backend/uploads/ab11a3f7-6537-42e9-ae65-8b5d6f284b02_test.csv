@@ -1,0 +1,2 @@
+date,campaign_id,campaign_name,platform,impressions,clicks,spend,conversions,revenue
+2026-04-01,550e8400-e29b-41d4-a716-446655440099,Test,google_ads,invalid,50,100.00,5,500.00
