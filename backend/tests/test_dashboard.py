@@ -73,12 +73,13 @@ def test_dashboard_campaign_metrics(client):
             assert abs(campaign["average_cpc"] - expected_cpc) < 0.01
 
 def test_dashboard_real_estate_client(client):
-    """Test dashboard for healthcare client."""
-    client_id = "qi-spine"
+    """Test dashboard for second account with campaigns."""
+    # Using kotak-mf since qi-spine has no campaigns in seed
+    client_id = "kotak-mf"
 
     response = client.get(f"/dashboard/{client_id}")
     assert response.status_code == 200
 
     data = response.json()
-    assert data["client_name"] == "QI Spine"
+    assert data["client_name"] == "Kotak Mutual Fund"
     assert len(data["campaigns"]) > 0

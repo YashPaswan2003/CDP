@@ -97,7 +97,11 @@ async def analyze_upload(
 
         # Parse file
         sheets = parse_file(str(file_path))
-        classified = classify_sheets(sheets)
+        classified_list = classify_sheets(sheets)
+
+        # Separate sheets into included and skipped
+        included_sheets = [s for s in classified_list if s["type"] != "skip"]
+        skipped_sheets = [s for s in classified_list if s["type"] == "skip"]
 
         # Create upload record in DB
         conn.execute(f"""
@@ -116,8 +120,8 @@ async def analyze_upload(
 
         # Prepare sheet summaries with column previews
         sheet_summaries = {}
-        for sheet_info in classified["included"]:
-            sheet_name = sheet_info["name"]
+        for sheet_info in included_sheets:
+            sheet_name = sheet_info["sheet_name"]
             df = sheets[sheet_name]
 
             # Get column mapping preview
@@ -125,22 +129,22 @@ async def analyze_upload(
 
             sheet_summaries[sheet_name] = {
                 "type": sheet_info["type"],
-                "row_count": sheet_info["row_count"],
+                "row_count": sheet_info["rows"],
                 "columns": list(df.columns),
                 "column_mapping": {k: v["canonical"] for k, v in col_mapping.items()},
                 "unmapped_columns": [col for col, meta in col_mapping.items() if meta["status"] == "unmapped"],
                 "first_rows": df.head(3).values.tolist(),
             }
 
-        logger.info(f"Upload {upload_id} analyzed: {len(classified['included'])} sheets, {len(classified['skipped'])} skipped")
+        logger.info(f"Upload {upload_id} analyzed: {len(included_sheets)} sheets, {len(skipped_sheets)} skipped")
 
         return AnalyzeResponse(
             upload_id=upload_id,
             status="analyzed",
             file_name=file.filename,
             sheets={
-                "included": classified["included"],
-                "skipped": classified["skipped"],
+                "included": included_sheets,
+                "skipped": skipped_sheets,
                 "summaries": sheet_summaries,
             }
         )
