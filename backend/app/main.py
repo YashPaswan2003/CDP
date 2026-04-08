@@ -11,6 +11,7 @@ from app.config import settings
 from app.database.connection import init_db, get_connection
 from app.database.seed import seed_database
 from app.routes import auth, upload, dashboard, chat, analytics
+from app.routes.funnel_stages import router as funnel_stages_router
 
 # Configure logging
 log_dir = settings.LOG_DIR
@@ -83,6 +84,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(upload.router)
+app.include_router(funnel_stages_router)
 app.include_router(dashboard.router)
 app.include_router(chat.router)
 app.include_router(analytics.router)

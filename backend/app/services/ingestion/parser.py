@@ -7,6 +7,13 @@ from typing import Dict, List
 logger = logging.getLogger("ingestion")
 
 
+class ParsingError(Exception):
+    """Exception raised when file parsing fails."""
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
 def parse_file(file_path: str) -> Dict[str, pd.DataFrame]:
     """
     Parse Excel (.xlsx, .xlsb) or CSV file and return dict of {sheet_name: DataFrame}.
@@ -16,6 +23,9 @@ def parse_file(file_path: str) -> Dict[str, pd.DataFrame]:
 
     Returns:
         Dict mapping sheet names to DataFrames
+
+    Raises:
+        ParsingError: If file type is unsupported or parsing fails
     """
     file_path = Path(file_path)
 
@@ -26,19 +36,20 @@ def parse_file(file_path: str) -> Dict[str, pd.DataFrame]:
     elif file_path.suffix.lower() == ".xlsb":
         return _parse_xlsb(file_path)
     else:
-        raise ValueError(f"Unsupported file type: {file_path.suffix}")
+        raise ParsingError(f"Unsupported file type: {file_path.suffix}")
 
 
 def _parse_csv(file_path: Path) -> Dict[str, pd.DataFrame]:
     """Parse CSV file. CSV is treated as single sheet named 'data'."""
     try:
         df = pd.read_csv(file_path, dtype=str)
-        # Clean column names: strip whitespace, lowercase, underscores
+        # Clean column names: strip whitespace
         df.columns = [col.strip() for col in df.columns]
+        logger.info(f"Parsed CSV: {file_path.name} ({len(df)} rows, {len(df.columns)} columns)")
         return {"data": df}
     except Exception as e:
         logger.error(f"Failed to parse CSV: {e}")
-        raise
+        raise ParsingError(f"CSV parsing failed: {str(e)}")
 
 
 def _parse_xlsx(file_path: Path) -> Dict[str, pd.DataFrame]:
@@ -49,7 +60,7 @@ def _parse_xlsx(file_path: Path) -> Dict[str, pd.DataFrame]:
 
         for sheet_name in excel_file.sheet_names:
             df = pd.read_excel(file_path, sheet_name=sheet_name, dtype=str)
-            # Clean column names
+            # Clean column names: strip whitespace
             df.columns = [col.strip() if isinstance(col, str) else str(col) for col in df.columns]
             sheets[sheet_name] = df
 
@@ -57,11 +68,16 @@ def _parse_xlsx(file_path: Path) -> Dict[str, pd.DataFrame]:
         return sheets
     except Exception as e:
         logger.error(f"Failed to parse XLSX: {e}")
-        raise
+        raise ParsingError(f"XLSX parsing failed: {str(e)}")
 
 
 def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
-    """Parse .xlsb binary Excel file using pyxlsb."""
+    """
+    Parse .xlsb binary Excel file using pyxlsb row iterator.
+
+    Uses row iterator instead of pd.read_excel to avoid loading entire
+    file into memory, which can cause memory bloat with large files.
+    """
     try:
         from pyxlsb import open_workbook
 
@@ -76,6 +92,7 @@ def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
                     rows.append(row_data)
                     # Limit to first 10k rows to avoid memory bloat
                     if row_idx > 10000:
+                        logger.warning(f"Sheet '{sheet_name}' truncated to 10000 rows")
                         break
 
                 if rows:
@@ -98,7 +115,7 @@ def _parse_xlsb(file_path: Path) -> Dict[str, pd.DataFrame]:
         return sheets
     except Exception as e:
         logger.error(f"Failed to parse XLSB: {e}")
-        raise
+        raise ParsingError(f"XLSB parsing failed: {str(e)}")
 
 
 def _find_header_row(rows: List) -> int:

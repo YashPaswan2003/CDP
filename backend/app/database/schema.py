@@ -298,7 +298,8 @@ def create_tables(conn):
             file_hash          VARCHAR(64),
             status             VARCHAR(30),
             conflicts_detected INTEGER DEFAULT 0,
-            created_at         TIMESTAMP DEFAULT NOW()
+            created_at         TIMESTAMP DEFAULT NOW(),
+            UNIQUE (upload_id, version_number)
         )
     """)
 
@@ -373,6 +374,12 @@ def create_tables(conn):
             created_at       TIMESTAMP DEFAULT NOW()
         )
     """)
+
+    # ========== PERFORMANCE INDEXES ==========
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_account_date_platform ON campaign_metrics (account_id, date_from, platform)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_upload_id ON campaign_metrics (upload_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_upload_conflicts_upload_id ON upload_conflicts (upload_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_uploads_account_id ON uploads (account_id)")
 
     conn.commit()
 

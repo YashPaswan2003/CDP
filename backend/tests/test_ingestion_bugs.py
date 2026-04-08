@@ -9,7 +9,7 @@ sys.path.insert(0, '/Users/yash/CDP/backend')
 import pytest
 from app.services.ingestion import (
     normalize_value,
-    detect_funnel_stage,
+    detect_stage,
     parse_file,
 )
 
@@ -93,19 +93,19 @@ class TestFunnelDetection:
 
     def test_detects_explicit_tofu_in_campaign_name(self):
         """Should detect _TOFU suffix explicitly in campaign name"""
-        stage, confidence = detect_funnel_stage('SEM_SpineV3_TOFU')
+        stage, confidence = detect_stage('SEM_SpineV3_TOFU')
         assert stage == 'tofu', f"Expected 'tofu', got '{stage}'"
         assert confidence >= 0.8, f"Expected confidence >= 0.8, got {confidence}"
 
     def test_detects_explicit_mofu_in_campaign_name(self):
         """Should detect _MOFU suffix explicitly"""
-        stage, confidence = detect_funnel_stage('Campaign_MOFU_Retargeting')
+        stage, confidence = detect_stage('Campaign_MOFU_Retargeting')
         assert stage == 'mofu', f"Expected 'mofu', got '{stage}'"
         assert confidence >= 0.8, f"Expected confidence >= 0.8, got {confidence}"
 
     def test_detects_explicit_bofu_in_campaign_name(self):
         """Should detect _BOFU suffix explicitly"""
-        stage, confidence = detect_funnel_stage('Conversion_Campaign_BOFU')
+        stage, confidence = detect_stage('Conversion_Campaign_BOFU')
         assert stage == 'bofu', f"Expected 'bofu', got '{stage}'"
         assert confidence >= 0.8, f"Expected confidence >= 0.8, got {confidence}"
 
@@ -119,7 +119,7 @@ class TestFunnelDetection:
             ('YouTube_Video_Campaign', 'tofu'),
         ]
         for campaign_name, expected_stage in test_cases:
-            stage, _ = detect_funnel_stage(campaign_name)
+            stage, _ = detect_stage(campaign_name)
             assert stage == expected_stage, \
                 f"Campaign '{campaign_name}' should be {expected_stage}, got {stage}"
 
@@ -132,7 +132,7 @@ class TestFunnelDetection:
             ('Interest_Based_Campaign', 'mofu'),
         ]
         for campaign_name, expected_stage in test_cases:
-            stage, _ = detect_funnel_stage(campaign_name)
+            stage, _ = detect_stage(campaign_name)
             assert stage == expected_stage, \
                 f"Campaign '{campaign_name}' should be {expected_stage}, got {stage}"
 
@@ -145,13 +145,13 @@ class TestFunnelDetection:
             ('Category_Specific_Campaign', 'bofu'),
         ]
         for campaign_name, expected_stage in test_cases:
-            stage, _ = detect_funnel_stage(campaign_name)
+            stage, _ = detect_stage(campaign_name)
             assert stage == expected_stage, \
                 f"Campaign '{campaign_name}' should be {expected_stage}, got {stage}"
 
     def test_returns_unknown_for_unclassifiable_campaign(self):
         """Should return 'unknown' if no patterns match"""
-        stage, _ = detect_funnel_stage('Random_Campaign_XYZ_ABC')
+        stage, _ = detect_stage('Random_Campaign_XYZ_ABC')
         assert stage == 'unknown', f"Expected 'unknown' for unclassifiable, got '{stage}'"
 
 

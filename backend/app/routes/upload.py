@@ -10,10 +10,9 @@ from pydantic import BaseModel
 from app.database.connection import get_connection
 from app.services.ingestion import (
     parse_file,
-    detect_sheet_type,
     classify_sheets,
     map_columns,
-    detect_funnel_stage,
+    detect_stage,
     normalize_row,
 )
 from app.services.ingestion.importer import compute_file_hash, import_metrics
@@ -76,8 +75,9 @@ async def analyze_upload(
         upload_id = str(uuid4())
         conn = get_connection()
 
-        # Save file
-        file_path = UPLOADS_DIR / f"{upload_id}_{file.filename}"
+        # Save file (SECURITY FIX: use Path.name to prevent directory traversal)
+        safe_filename = Path(file.filename).name
+        file_path = UPLOADS_DIR / f"{upload_id}_{safe_filename}"
         content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
@@ -231,14 +231,14 @@ async def process_upload_async(upload_id: str, account_id: str, sheet_mappings: 
 
                 # Add funnel detection
                 if "campaign_name" in normalized:
-                    funnel_stage, _ = detect_funnel_stage(normalized["campaign_name"])
+                    funnel_stage, _ = detect_stage(normalized["campaign_name"])
                     normalized["funnel_stage"] = funnel_stage
 
                 rows.append(normalized)
 
             # Import rows
-            import_result = import_metrics(conn, account_id, rows, upload_id, file_hash)
-            rows_imported += import_result["rows_imported"]
+            import_result = import_metrics(account_id, upload_id, rows, conn)
+            rows_imported += import_result["rows"]
 
         # Update final status
         conn.execute(f"""
