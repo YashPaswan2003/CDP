@@ -53,9 +53,9 @@ def test_upload_empty_csv(client):
     csv_content = ""
 
     response = client.post(
-        "/upload/csv",
+        "/api/upload/analyze",
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
-        params={"client_id": "test-client"}
+        params={"account_id": "test-account"}
     )
     assert response.status_code == 400
 
@@ -66,8 +66,8 @@ def test_upload_csv_with_data_validation(client):
 2026-04-01,550e8400-e29b-41d4-a716-446655440099,Test,google_ads,invalid,50,100.00,5,500.00"""
 
     response = client.post(
-        "/upload/csv",
+        "/api/upload/analyze",
         files={"file": ("test.csv", BytesIO(csv_content.encode()), "text/csv")},
-        params={"client_id": "test-client"}
+        params={"account_id": "test-account"}
     )
     assert response.status_code == 400

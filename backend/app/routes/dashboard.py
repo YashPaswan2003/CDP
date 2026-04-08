@@ -55,7 +55,7 @@ def get_dashboard(
         metrics_result = conn.execute(
             f"""
             SELECT m.date, m.impressions, m.clicks, m.spend, m.conversions, m.revenue
-            FROM metrics m
+            FROM daily_metrics m
             JOIN campaigns c ON m.campaign_id = c.id
             WHERE m.campaign_id = ? {date_filter}
             ORDER BY m.date

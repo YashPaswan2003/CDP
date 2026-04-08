@@ -24,7 +24,7 @@ def test_dashboard_success(client):
 
 def test_dashboard_with_date_range(client):
     """Test dashboard with date range filter."""
-    client_id = "550e8400-e29b-41d4-a716-446655440000"
+    client_id = "kotak-mf"
 
     response = client.get(
         f"/dashboard/{client_id}",
@@ -46,7 +46,7 @@ def test_dashboard_nonexistent_client(client):
 
 def test_dashboard_campaign_metrics(client):
     """Test that campaign metrics are calculated correctly."""
-    client_id = "550e8400-e29b-41d4-a716-446655440000"
+    client_id = "kotak-mf"
 
     response = client.get(f"/dashboard/{client_id}")
     assert response.status_code == 200
@@ -73,12 +73,12 @@ def test_dashboard_campaign_metrics(client):
             assert abs(campaign["average_cpc"] - expected_cpc) < 0.01
 
 def test_dashboard_real_estate_client(client):
-    """Test dashboard for real estate client."""
-    client_id = "550e8400-e29b-41d4-a716-446655440010"
+    """Test dashboard for healthcare client."""
+    client_id = "qi-spine"
 
     response = client.get(f"/dashboard/{client_id}")
     assert response.status_code == 200
 
     data = response.json()
-    assert data["client_name"] == "RealEstate Luxury"
+    assert data["client_name"] == "QI Spine"
     assert len(data["campaigns"]) > 0
