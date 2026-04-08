@@ -50,7 +50,6 @@ def seed_database():
         {"user_id": "user-001", "account_id": "ethinos"},
         {"user_id": "user-001", "account_id": "kotak-mf"},
         {"user_id": "user-001", "account_id": "qi-spine"},
-        {"user_id": "user-001", "account_id": "kotak-mf"},
         {"user_id": "user-002", "account_id": "kotak-mf"},
         {"user_id": "user-002", "account_id": "qi-spine"},
     ]
