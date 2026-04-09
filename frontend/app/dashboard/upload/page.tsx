@@ -22,6 +22,7 @@ export default function UploadPage() {
   const { selectedAccount } = useAccount();
   const [step, setStep] = useState<UploadStep>("drop");
   const selectedAccountId = selectedAccount?.id;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploadId, setUploadId] = useState<string>("");
@@ -84,7 +85,7 @@ export default function UploadPage() {
       formData.append("file", fileToAnalyze);
       formData.append("account_id", selectedAccountId || "");
 
-      const res = await fetch("/api/upload/analyze", {
+      const res = await fetch(`${apiUrl}/api/upload/analyze`, {
         method: "POST",
         body: formData,
       });
@@ -131,7 +132,7 @@ export default function UploadPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/upload/confirm", {
+      const res = await fetch(`${apiUrl}/api/upload/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function UploadPage() {
       const poll = async () => {
         if (pollCount >= maxPolls) return;
 
-        const res = await fetch(`/api/upload/status/${uploadId}`);
+        const res = await fetch(`${apiUrl}/api/upload/status/${uploadId}`);
         const data = await res.json();
 
         setRowsImported(data.rows_imported || 0);
