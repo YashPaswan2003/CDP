@@ -1,6 +1,12 @@
-"use client";
-
 import { AnalyticsBuilder } from "./client";
+
+export function generateStaticParams() {
+  return [
+    { platform: "google-ads" },
+    { platform: "dv360" },
+    { platform: "meta" },
+  ];
+}
 
 export default function AnalyticsPlatformPage() {
   return (
