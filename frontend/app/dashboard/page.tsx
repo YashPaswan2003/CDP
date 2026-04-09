@@ -32,9 +32,9 @@ interface FunnelSectionProps {
 
 // Brand color fallbacks - these will be overridden by CSS variables in layout.tsx
 const BRAND_FALLBACKS = {
-  primary: "#EC1D24",   // Kotak red
-  secondary: "#003087", // Kotak navy
-  accent: "#FFB81C",    // Kotak gold
+  primary: "#5C6BC0",   // Amplitude indigo
+  secondary: "#3F51B5", // Amplitude deep indigo
+  accent: "#F79009",    // Amplitude amber
 };
 
 function MetricCard({ label, value }: { label: string; value: string }) {
@@ -143,7 +143,7 @@ function FunnelSection({
   platformCards,
 }: FunnelSectionProps) {
   // Get accent color based on stage
-  const accentColor = stage === "tofu" ? "#EF4444" : stage === "mofu" ? "#3B82F6" : "#F59E0B";
+  const accentColor = stage === "tofu" ? "#5C6BC0" : stage === "mofu" ? "#7986CB" : "#F79009";
 
   // Build platform sub-cards data based on stage
   const getPlatformMetrics = (platform: string) => {
@@ -619,9 +619,9 @@ export default function PortfolioPage() {
             <LineChart
               data={filteredDailyMetrics}
               dataKeys={[
-                { key: "spend", name: "Spend", color: "#3B82F6" },
+                { key: "spend", name: "Spend", color: "#5C6BC0" },
                 { key: "revenue", name: "Revenue", color: "#10B981" },
-                { key: "impressions", name: "Impressions", color: "#F59E0B" },
+                { key: "impressions", name: "Impressions", color: "#F79009" },
                 { key: "clicks", name: "Clicks", color: "#8B5CF6" },
                 { key: "conversions", name: "Conversions", color: "#EC4899" },
               ].filter((dk) => trendMetrics.includes(dk.key))}

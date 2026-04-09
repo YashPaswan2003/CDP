@@ -101,9 +101,9 @@ function SidebarContent({
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex">
       <style>{`
         :root {
-          --client-primary: ${selectedAccount?.brandColors?.primary ?? '#003f5c'};
-          --client-secondary: ${selectedAccount?.brandColors?.secondary ?? '#954e9b'};
-          --client-accent: ${selectedAccount?.brandColors?.accent ?? '#ffa600'};
+          --client-primary: ${selectedAccount?.brandColors?.primary ?? '#5C6BC0'};
+          --client-secondary: ${selectedAccount?.brandColors?.secondary ?? '#3F51B5'};
+          --client-accent: ${selectedAccount?.brandColors?.accent ?? '#F79009'};
         }
       `}</style>
       {/* Sidebar */}

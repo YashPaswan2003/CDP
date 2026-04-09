@@ -59,9 +59,9 @@ const MOCK_ACCOUNTS: ClientAccount[] = [
     platforms: ["google", "dv360", "meta"],
     clientType: "web",
     brandColors: {
-      primary: "#EC1D24",
-      secondary: "#003087",
-      accent: "#FFB81C",
+      primary: "#5C6BC0",
+      secondary: "#3F51B5",
+      accent: "#F79009",
     },
   },
 ];

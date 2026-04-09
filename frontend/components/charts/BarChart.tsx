@@ -35,21 +35,21 @@ export default function BarChart({
         layout={layout === "horizontal" ? "vertical" : "horizontal"}
         margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#2D3154" />
         {layout === "horizontal" ? (
           <>
             <XAxis
               type="number"
-              stroke="#94a3b8"
+              stroke="#9CA3AF"
               style={{ fontSize: "12px" }}
-              tick={{ fill: "#94a3b8" }}
+              tick={{ fill: "#9CA3AF" }}
             />
             <YAxis
               type="category"
               dataKey={xAxisKey}
-              stroke="#94a3b8"
+              stroke="#9CA3AF"
               style={{ fontSize: "12px" }}
-              tick={{ fill: "#94a3b8" }}
+              tick={{ fill: "#9CA3AF" }}
               width={95}
             />
           </>
@@ -57,21 +57,21 @@ export default function BarChart({
           <>
             <XAxis
               dataKey={xAxisKey}
-              stroke="#94a3b8"
+              stroke="#9CA3AF"
               style={{ fontSize: "12px" }}
-              tick={{ fill: "#94a3b8" }}
+              tick={{ fill: "#9CA3AF" }}
             />
-            <YAxis stroke="#94a3b8" style={{ fontSize: "12px" }} tick={{ fill: "#94a3b8" }} />
+            <YAxis stroke="#9CA3AF" style={{ fontSize: "12px" }} tick={{ fill: "#9CA3AF" }} />
           </>
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "1px solid #475569",
+            backgroundColor: "#1E2034",
+            border: "1px solid #2D3154",
             borderRadius: "8px",
-            color: "#e2e8f0",
+            color: "#FFFFFF",
           }}
-          labelStyle={{ color: "#e2e8f0" }}
+          labelStyle={{ color: "#FFFFFF" }}
           formatter={(value: any) => {
             if (typeof value === "number") {
               return value.toLocaleString(undefined, {
@@ -85,7 +85,7 @@ export default function BarChart({
         {showLegend && (
           <Legend
             wrapperStyle={{ paddingTop: "20px" }}
-            formatter={(value) => <span style={{ color: "#cbd5e1" }}>{value}</span>}
+            formatter={(value) => <span style={{ color: "#9CA3AF" }}>{value}</span>}
           />
         )}
         {dataKeys.map((dk) => (
