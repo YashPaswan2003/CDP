@@ -201,14 +201,14 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#F7F8FA] via-white to-[#EEF2FF] p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-amber-400 bg-clip-text text-transparent">
             Upload Marketing Data
           </h1>
-          <p className="text-slate-400 mt-2">
+          <p className="text-[#6B7280] mt-2">
             Import Excel, XLSX, or CSV files with campaign metrics
           </p>
         </div>
@@ -223,7 +223,7 @@ export default function UploadPage() {
                     step
                   ) >= i
                     ? "bg-blue-600 text-white"
-                    : "bg-slate-700 text-slate-400"
+                    : "bg-[#F3F4F6] text-[#6B7280]"
                 }`}
               >
                 {i + 1}
@@ -235,7 +235,7 @@ export default function UploadPage() {
                       step
                     ) > i
                       ? "bg-blue-600"
-                      : "bg-slate-700"
+                      : "bg-[#E5E7EB]"
                   }`}
                 />
               )}
@@ -263,7 +263,7 @@ export default function UploadPage() {
                 className={`relative p-12 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${
                   dragActive
                     ? "border-blue-600 bg-blue-600/10"
-                    : "border-slate-700 bg-slate-800/50"
+                    : "border-[#D1D5DB] bg-white"
                 } ${error ? "border-red-600 bg-red-600/5" : ""}`}
               >
                 <input
@@ -287,13 +287,13 @@ export default function UploadPage() {
                         ease: "easeInOut",
                       }}
                     >
-                      <Upload className="w-16 h-16 text-slate-500 mx-auto" />
+                      <Upload className="w-16 h-16 text-[#9CA3AF] mx-auto" />
                     </motion.div>
                     <div>
-                      <p className="text-lg font-semibold text-white">
+                      <p className="text-lg font-semibold text-[#1F2937]">
                         Drop your file here or click to browse
                       </p>
-                      <p className="text-sm text-slate-400 mt-1">
+                      <p className="text-sm text-[#6B7280] mt-1">
                         .xlsx · .xlsb · .csv · up to 200MB
                       </p>
                     </div>
@@ -312,13 +312,13 @@ export default function UploadPage() {
                     </motion.div>
 
                     {/* Log Feed */}
-                    <div className="max-h-48 overflow-y-auto bg-slate-900 rounded-lg p-4 text-left space-y-2">
+                    <div className="max-h-48 overflow-y-auto bg-[#F3F4F6] rounded-lg p-4 text-left space-y-2 border border-[#E5E7EB]">
                       {logLines.map((line, i) => (
                         <motion.p
                           key={i}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="text-sm text-slate-300 font-mono"
+                          className="text-sm text-[#374151] font-mono"
                         >
                           {line.includes("✓") ? (
                             <span className="text-green-400">{line}</span>
@@ -337,7 +337,7 @@ export default function UploadPage() {
                           setSheets({});
                         }}
                         whileHover={{ scale: 1.02 }}
-                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all text-sm"
+                        className="px-4 py-2 bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#1F2937] rounded-lg transition-all text-sm border border-[#D1D5DB]"
                       >
                         Upload another file
                       </motion.button>
@@ -369,15 +369,15 @@ export default function UploadPage() {
               className="space-y-6"
             >
               {/* Sheet Tabs */}
-              <div className="flex gap-2 border-b border-slate-700 overflow-x-auto">
+              <div className="flex gap-2 border-b border-[#E5E7EB] overflow-x-auto">
                 {Object.entries(sheets).map(([sheetName, summary]) => (
                   <motion.button
                     key={sheetName}
                     onClick={() => setActiveSheet(sheetName)}
                     className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
                       activeSheet === sheetName
-                        ? "border-blue-500 text-blue-400"
-                        : "border-transparent text-slate-400 hover:text-slate-300"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-[#6B7280] hover:text-[#374151]"
                     }`}
                   >
                     {sheetName} ({summary.row_count} rows)
@@ -387,12 +387,12 @@ export default function UploadPage() {
 
               {/* Column Mapping for Active Sheet */}
               {activeSheet && sheets[activeSheet] && (
-                <div className="space-y-6 bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <div className="space-y-6 bg-white border border-[#E5E7EB] rounded-xl p-6 shadow-sm">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-2">
                       Unmapped Columns
                     </h3>
-                    <p className="text-xs text-slate-400 mb-4">
+                    <p className="text-xs text-[#6B7280] mb-4">
                       Select a canonical field for each column
                     </p>
 
@@ -402,9 +402,9 @@ export default function UploadPage() {
                         {sheets[activeSheet].unmapped_columns.map((col) => (
                           <div
                             key={col}
-                            className="p-3 bg-slate-900 rounded-lg space-y-2"
+                            className="p-3 bg-[#F9FAFB] rounded-lg space-y-2 border border-[#E5E7EB]"
                           >
-                            <label className="block text-sm font-semibold text-slate-300">
+                            <label className="block text-sm font-semibold text-[#374151]">
                               {col}
                             </label>
                             <select
@@ -420,7 +420,7 @@ export default function UploadPage() {
                                   },
                                 }))
                               }
-                              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                              className="w-full px-3 py-2 bg-white border border-[#D1D5DB] rounded text-sm text-[#1F2937] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
                             >
                               <option value="">Select field...</option>
                               <option value="cost">Cost</option>
@@ -447,7 +447,7 @@ export default function UploadPage() {
                               <option value="city">City</option>
                               <option value="category">Category</option>
                             </select>
-                            <p className="text-xs text-slate-500 mt-2">
+                            <p className="text-xs text-[#9CA3AF] mt-2">
                               Sample:{" "}
                               {sheets[activeSheet].first_rows
                                 .slice(0, 1)
@@ -461,7 +461,7 @@ export default function UploadPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-[#6B7280]">
                         All columns auto-mapped! ✓
                       </p>
                     )}
@@ -472,7 +472,7 @@ export default function UploadPage() {
                     <motion.button
                       onClick={() => setStep("drop")}
                       whileHover={{ scale: 1.02 }}
-                      className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-white rounded-lg transition-all"
+                      className="px-6 py-3 border border-[#D1D5DB] hover:border-[#9CA3AF] text-[#1F2937] rounded-lg transition-all bg-white"
                     >
                       Back
                     </motion.button>
@@ -500,18 +500,18 @@ export default function UploadPage() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 space-y-6">
+              <div className="bg-white border border-[#E5E7EB] rounded-xl p-8 space-y-6 shadow-sm">
                 <div className="space-y-3">
-                  <h3 className="text-xl font-semibold text-white">
+                  <h3 className="text-xl font-semibold text-[#1F2937]">
                     Importing Data...
                   </h3>
-                  <div className="max-h-64 overflow-y-auto bg-slate-900 rounded-lg p-4 space-y-2">
+                  <div className="max-h-64 overflow-y-auto bg-[#F3F4F6] rounded-lg p-4 space-y-2 border border-[#E5E7EB]">
                     {logLines.map((line, i) => (
                       <motion.p
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="text-sm text-slate-300 font-mono"
+                        className="text-sm text-[#374151] font-mono"
                       >
                         {line.includes("✓") ? (
                           <span className="text-green-400">{line}</span>
@@ -522,8 +522,8 @@ export default function UploadPage() {
                     ))}
                   </div>
 
-                  <div className="p-4 bg-blue-600/10 border border-blue-600/50 rounded-lg">
-                    <p className="text-sm text-blue-300">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
                       <span className="font-semibold">{rowsImported}</span> rows
                       imported
                     </p>
@@ -549,10 +549,10 @@ export default function UploadPage() {
               >
                 <Check className="w-16 h-16 text-green-400 mx-auto" />
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">
+                  <h2 className="text-3xl font-bold text-[#1F2937] mb-2">
                     Import Successful!
                   </h2>
-                  <p className="text-lg text-green-300">
+                  <p className="text-lg text-green-700">
                     <span className="font-semibold">{rowsImported}</span> rows
                     imported to{" "}
                     <span className="font-semibold">{selectedAccountId}</span>
@@ -577,7 +577,7 @@ export default function UploadPage() {
                       setSheets({});
                     }}
                     whileHover={{ scale: 1.05 }}
-                    className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-white font-semibold rounded-lg transition-all"
+                    className="px-6 py-3 border border-[#D1D5DB] hover:border-[#9CA3AF] text-[#1F2937] font-semibold rounded-lg transition-all bg-white"
                   >
                     Upload Another File
                   </motion.button>

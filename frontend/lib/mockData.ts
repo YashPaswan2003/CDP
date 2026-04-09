@@ -5,13 +5,26 @@
 
 export interface DailyMetric {
   date: string;
+  platform: "google" | "meta" | "dv360";
   spend: number;
   revenue: number;
   impressions: number;
   clicks: number;
   conversions: number;
   views: number;
-  platform: "google" | "meta" | "dv360";
+  // TOFU
+  reach: number;
+  frequency: number;
+  cpm: number;
+  vtr: number;
+  cpv: number;
+  viewability: number;
+  thruPlays: number;
+  // MOFU
+  engagementRate: number;
+  // BOFU
+  vtc: number;
+  cpa: number;
 }
 
 export interface SearchTerm {
@@ -2304,6 +2317,7 @@ export function generateDailyMetrics(): DailyMetric[] {
     const googleImpressions = Math.round(49400 * trendMultiplier * weekendMod * dayVariation);
     const googleClicks = Math.round(1894 * trendMultiplier * weekendMod * dayVariation);
 
+    const googleConversions = Math.round(googleClicks * 0.048);
     metrics.push({
       date: dateStr,
       platform: "google",
@@ -2311,8 +2325,18 @@ export function generateDailyMetrics(): DailyMetric[] {
       revenue: Math.round(googleSpend * 3),
       impressions: googleImpressions,
       clicks: googleClicks,
-      conversions: Math.round(googleClicks * 0.048),
+      conversions: googleConversions,
       views: 0,
+      reach: Math.round(googleImpressions * 0.65),
+      frequency: 2.1,
+      cpm: googleImpressions > 0 ? (googleSpend / googleImpressions) * 1000 : 0,
+      vtr: 0.32,
+      cpv: 0,
+      viewability: 0.72,
+      thruPlays: 0,
+      engagementRate: 0.024,
+      vtc: 0,
+      cpa: googleConversions > 0 ? googleSpend / googleConversions : 0,
     });
 
     // DV360: Display/Video, higher volume
@@ -2321,6 +2345,7 @@ export function generateDailyMetrics(): DailyMetric[] {
     const dv360Clicks = Math.round(2830 * trendMultiplier * weekendMod * dayVariation);
     const dv360Views = Math.round(50000 * trendMultiplier * weekendMod * dayVariation);
 
+    const dv360Conversions = Math.round(dv360Clicks * 0.027);
     metrics.push({
       date: dateStr,
       platform: "dv360",
@@ -2328,8 +2353,18 @@ export function generateDailyMetrics(): DailyMetric[] {
       revenue: Math.round(dv360Spend * 2.03),
       impressions: dv360Impressions,
       clicks: dv360Clicks,
-      conversions: Math.round(dv360Clicks * 0.027),
+      conversions: dv360Conversions,
       views: dv360Views,
+      reach: Math.round(dv360Impressions * 0.58),
+      frequency: 4.2,
+      cpm: dv360Impressions > 0 ? (dv360Spend / dv360Impressions) * 1000 : 0,
+      vtr: 0.45,
+      cpv: dv360Views > 0 ? dv360Spend / dv360Views : 0,
+      viewability: 0.68,
+      thruPlays: 0,
+      engagementRate: 0.031,
+      vtc: Math.round(dv360Conversions * 0.35),
+      cpa: dv360Conversions > 0 ? dv360Spend / dv360Conversions : 0,
     });
 
     // Meta: Social, highly variable
@@ -2337,6 +2372,8 @@ export function generateDailyMetrics(): DailyMetric[] {
     const metaImpressions = Math.round(77000 * trendMultiplier * weekendMod * dayVariation);
     const metaClicks = Math.round(2127 * trendMultiplier * weekendMod * dayVariation);
 
+    const metaConversions = Math.round(metaClicks * 0.0437);
+    const metaViews = 0;
     metrics.push({
       date: dateStr,
       platform: "meta",
@@ -2344,8 +2381,18 @@ export function generateDailyMetrics(): DailyMetric[] {
       revenue: Math.round(metaSpend * 3.44),
       impressions: metaImpressions,
       clicks: metaClicks,
-      conversions: Math.round(metaClicks * 0.0437),
-      views: 0,
+      conversions: metaConversions,
+      views: metaViews,
+      reach: Math.round(metaImpressions * 0.42),
+      frequency: 6.8,
+      cpm: metaImpressions > 0 ? (metaSpend / metaImpressions) * 1000 : 0,
+      vtr: 0,
+      cpv: 0,
+      viewability: 0,
+      thruPlays: Math.round(metaViews * 0.6),
+      engagementRate: 0.048,
+      vtc: 0,
+      cpa: metaConversions > 0 ? metaSpend / metaConversions : 0,
     });
   }
 

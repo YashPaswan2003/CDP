@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, LayoutGroup } from "framer-motion";
+import { motion } from "framer-motion";
 import { dashboardAPI, fetchDailyMetrics } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
-import { X, TrendingUp, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 interface PlatformMetrics {
   platform: "google" | "dv360" | "meta";
@@ -28,8 +28,6 @@ interface FunnelSectionProps {
   metrics: Record<string, number | string>;
   insight: string;
   platformCards: PlatformMetrics[];
-  expandedCard: { platform: string; stage: string } | null;
-  onCardClick: (platform: string, stage: string) => void;
 }
 
 // Brand color fallbacks - these will be overridden by CSS variables in layout.tsx
@@ -38,6 +36,36 @@ const BRAND_FALLBACKS = {
   secondary: "#003087", // Kotak navy
   accent: "#FFB81C",    // Kotak gold
 };
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-[#1E2433] rounded-xl p-4 space-y-1 min-w-0">
+      <p className="text-xs text-[#6B7280] uppercase tracking-wide font-medium truncate">{label}</p>
+      <p className="text-xl font-bold text-white truncate">{value}</p>
+    </div>
+  );
+}
+
+function PlatformSubCard({ platform, metrics, accentColor }: {
+  platform: string;
+  metrics: { label: string; value: string }[];
+  accentColor: string;
+}) {
+  return (
+    <div className="bg-[#1E2433] rounded-xl p-5 flex-1">
+      <div className="flex justify-between items-center mb-3">
+        <h4 className="text-white font-semibold text-sm">{platform}</h4>
+        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: accentColor }} />
+      </div>
+      {metrics.map(m => (
+        <div key={m.label} className="flex justify-between py-1.5 border-b border-[#2A3144] last:border-0">
+          <span className="text-[#6B7280] text-sm">{m.label}</span>
+          <span className="text-white text-sm font-medium">{m.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const stageConfig = {
   tofu: {
@@ -107,184 +135,37 @@ function FunnelPipeline() {
   );
 }
 
-function PlatformCard({
-  platform,
-  stage,
-  isExpanded,
-  onClick,
-}: {
-  platform: PlatformMetrics;
-  stage: "tofu" | "mofu" | "bofu";
-  isExpanded: boolean;
-  onClick: () => void;
-}) {
-  const config = stageConfig[stage];
-  const layoutId = `platform-card-${platform.platform}-${stage}`;
-
-  const getMetricsForStage = () => {
-    switch (stage) {
-      case "tofu":
-        return [
-          { label: "Impressions", value: (platform.impressions / 1000000).toFixed(1) + "M" },
-          { label: "Reach", value: (platform.reach ? (platform.reach / 1000000).toFixed(1) : "N/A") + "M" },
-          { label: "Frequency", value: platform.reach ? (platform.impressions / platform.reach).toFixed(1) + "x" : "N/A" },
-        ];
-      case "mofu":
-        return [
-          { label: "Clicks", value: (platform.clicks / 1000).toFixed(0) + "K" },
-          { label: "CTR", value: ((platform.clicks / platform.impressions) * 100).toFixed(2) + "%" },
-          { label: "Avg CPC", value: formatCurrency(platform.spend / platform.clicks, "INR") },
-        ];
-      case "bofu":
-        return [
-          { label: "Conversions", value: (platform.conversions / 1000).toFixed(1) + "K" },
-          { label: "Revenue", value: formatCurrency(platform.revenue, "INR") },
-          { label: "ROAS", value: (platform.revenue / platform.spend).toFixed(2) + "x" },
-        ];
-    }
-  };
-
-  if (!platform.isActive) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-6 opacity-50"
-      >
-        <p className="font-semibold text-slate-300 mb-2">{platform.name}</p>
-        <p className="text-xs text-slate-500">Not running this platform</p>
-      </motion.div>
-    );
-  }
-
-  return (
-    <LayoutGroup>
-      {isExpanded ? (
-        <motion.div
-          layoutId={layoutId}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClick();
-          }}
-        >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onClick}
-          />
-
-          <motion.div
-            layoutId={layoutId}
-            className="relative bg-slate-900/95 border border-slate-700/50 rounded-2xl p-8 max-w-2xl w-full shadow-2xl z-10"
-          >
-            <motion.button
-              onClick={onClick}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="absolute top-6 right-6 p-2 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-slate-400" />
-            </motion.button>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h3 className="text-3xl font-bold text-white mb-1">{platform.name}</h3>
-              <p className="text-slate-400 mb-6">{config.label} Performance</p>
-
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                {getMetricsForStage().map((metric, idx) => (
-                  <motion.div
-                    key={metric.label}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + idx * 0.1 }}
-                    className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4"
-                  >
-                    <p className="text-xs text-slate-400 font-medium mb-2">{metric.label}</p>
-                    <p className="text-2xl font-bold" style={{ color: config.hex }}>
-                      {metric.value}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-
-              <motion.a
-                whileHover={{ scale: 1.02, x: 4 }}
-                href={`/dashboard/analytics/${platform.platform === "dv360" ? "dv360" : platform.platform === "meta" ? "meta" : "google-ads"}`}
-                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 font-semibold transition-colors"
-              >
-                Open Full Platform <TrendingUp className="w-4 h-4" />
-              </motion.a>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      ) : (
-        <motion.div
-          layoutId={layoutId}
-          onClick={onClick}
-          whileHover={{ y: -4, boxShadow: `0 20px 25px -5 ${config.color}40` }}
-          className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 cursor-pointer transition-all group"
-          style={{ borderColor: isExpanded ? config.color : undefined }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-white">{platform.name}</h4>
-            <div
-              style={{ backgroundColor: config.hex }}
-              className="w-1 h-6 rounded group-hover:h-8 transition-all"
-            />
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-3 text-sm"
-          >
-            {getMetricsForStage().slice(0, 2).map((metric) => (
-              <div key={metric.label} className="flex justify-between items-center">
-                <span className="text-slate-400">{metric.label}</span>
-                <span className="font-semibold text-white">{metric.value}</span>
-              </div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileHover={{ opacity: 1 }}
-            className="mt-4 pt-4 border-t border-slate-700/50 text-xs text-blue-400 font-medium group-hover:text-blue-300 transition-colors"
-          >
-            Click to expand →
-          </motion.div>
-        </motion.div>
-      )}
-    </LayoutGroup>
-  );
-}
-
 function FunnelSection({
   title,
   stage,
   metrics,
   insight,
   platformCards,
-  expandedCard,
-  onCardClick,
 }: FunnelSectionProps) {
-  const config = stageConfig[stage];
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.1,
-      },
-    },
+  // Get accent color based on stage
+  const accentColor = stage === "tofu" ? "#EF4444" : stage === "mofu" ? "#3B82F6" : "#F59E0B";
+
+  // Build platform sub-cards data based on stage
+  const getPlatformMetrics = (platform: string) => {
+    const metrics = platformCards.find(p => p.platform === platform);
+    if (!metrics) return [];
+
+    if (stage === "tofu") {
+      return [
+        { label: "Impressions", value: (metrics.impressions / 1000000).toFixed(1) + "M" },
+        { label: "Reach", value: (metrics.reach ? (metrics.reach / 1000000).toFixed(1) : "N/A") + "M" }
+      ];
+    } else if (stage === "mofu") {
+      return [
+        { label: "Clicks", value: (metrics.clicks / 1000).toFixed(0) + "K" },
+        { label: "CTR", value: ((metrics.clicks / metrics.impressions) * 100).toFixed(2) + "%" }
+      ];
+    } else {
+      return [
+        { label: "Conversions", value: (metrics.conversions / 1000).toFixed(1) + "K" },
+        { label: "Revenue", value: formatCurrency(metrics.revenue, "INR") }
+      ];
+    }
   };
 
   return (
@@ -292,77 +173,53 @@ function FunnelSection({
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
-      variants={containerVariants}
-      className="space-y-6"
+      className="space-y-4"
     >
       {/* Section Header */}
-      <motion.div
-        variants={{
-          hidden: { opacity: 0, x: -20 },
-          visible: { opacity: 1, x: 0 },
-        }}
-        className="flex items-start gap-4"
-      >
-        <div
-          style={{ backgroundColor: config.hex }}
-          className="w-1.5 h-12 rounded flex-shrink-0 mt-1"
-        />
+      <div className="flex items-center gap-3">
+        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: accentColor }} />
         <div>
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-          <p className="text-sm text-slate-400 mt-2">{insight}</p>
+          <h2 className="text-xl font-bold text-white">{title}</h2>
+          <p className="text-[#6B7280] text-sm">{insight}</p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Summary Metrics Grid */}
-      <motion.div
-        variants={containerVariants}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3"
-      >
-        {Object.entries(metrics).map(([key, value]) => (
-          <motion.div
-            key={key}
-            variants={{
-              hidden: { opacity: 0, y: 10 },
-              visible: { opacity: 1, y: 0 },
-            }}
-            className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4"
-          >
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
-              {key}
-            </p>
-            <p className="text-lg md:text-xl font-bold text-white">{value}</p>
-          </motion.div>
+      <div className="grid grid-cols-4 gap-3">
+        {Object.entries(metrics).slice(0, 4).map(([key, value]) => (
+          <MetricCard key={key} label={key} value={String(value)} />
         ))}
-      </motion.div>
+      </div>
 
-      {/* Platform Cards */}
-      <motion.div
-        variants={containerVariants}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        {platformCards.map((platform) => (
-          <motion.div
-            key={platform.platform}
-            variants={{
-              hidden: { opacity: 0, y: 20 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <PlatformCard
-              platform={platform}
-              stage={stage}
-              isExpanded={expandedCard?.platform === platform.platform && expandedCard?.stage === stage}
-              onClick={() => {
-                if (expandedCard?.platform === platform.platform && expandedCard?.stage === stage) {
-                  onCardClick("", "");
-                } else {
-                  onCardClick(platform.platform, stage);
-                }
-              }}
-            />
-          </motion.div>
+      {/* Additional Metrics Grid */}
+      <div className="grid grid-cols-4 gap-3">
+        {Object.entries(metrics).slice(4, 8).map(([key, value]) => (
+          <MetricCard key={key} label={key} value={String(value)} />
         ))}
-      </motion.div>
+        {Object.entries(metrics).slice(8).length > 0 ? (
+          Object.entries(metrics).slice(8).map(([key, value]) => (
+            <MetricCard key={key} label={key} value={String(value)} />
+          ))
+        ) : (
+          <>
+            {[...Array(Math.max(0, 4 - Object.entries(metrics).slice(4).length))].map((_, i) => (
+              <div key={`empty-${i}`} />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Platform Sub-Cards */}
+      <div className="flex gap-3">
+        {platformCards.filter(p => p.isActive).map((platform) => (
+          <PlatformSubCard
+            key={platform.platform}
+            platform={platform.name}
+            metrics={getPlatformMetrics(platform.platform)}
+            accentColor={accentColor}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }
@@ -372,7 +229,6 @@ export default function PortfolioPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
-  const [expandedCard, setExpandedCard] = useState<{ platform: string; stage: string } | null>(null);
 
   // Month filter state
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
@@ -664,10 +520,6 @@ export default function PortfolioPage() {
         metrics={tofuMetrics}
         insight={tofuInsight}
         platformCards={Object.values(platformMetrics)}
-        expandedCard={expandedCard}
-        onCardClick={(platform, stage) => {
-          setExpandedCard(platform && stage ? { platform, stage } : null);
-        }}
       />
 
       {/* MOFU Section */}
@@ -677,10 +529,6 @@ export default function PortfolioPage() {
         metrics={mofuMetrics}
         insight={mofuInsight}
         platformCards={Object.values(platformMetrics)}
-        expandedCard={expandedCard}
-        onCardClick={(platform, stage) => {
-          setExpandedCard(platform && stage ? { platform, stage } : null);
-        }}
       />
 
       {/* BOFU Section */}
@@ -690,10 +538,6 @@ export default function PortfolioPage() {
         metrics={bofuMetrics}
         insight={bofuInsight}
         platformCards={Object.values(platformMetrics)}
-        expandedCard={expandedCard}
-        onCardClick={(platform, stage) => {
-          setExpandedCard(platform && stage ? { platform, stage } : null);
-        }}
       />
 
       {/* Performance Trend */}
