@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, LayoutGroup } from "framer-motion";
-import { dashboardAPI } from "@/lib/api";
+import { dashboardAPI, fetchDailyMetrics } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
-import { generateDailyMetrics } from "@/lib/mockData";
 import { X, TrendingUp, ChevronDown } from "lucide-react";
 
 interface PlatformMetrics {
@@ -396,7 +395,8 @@ export default function PortfolioPage() {
       try {
         const response = await dashboardAPI.getMetrics(selectedAccount?.id || "");
         setData(response.data);
-        setDailyMetrics(generateDailyMetrics());
+        const metrics = await fetchDailyMetrics({ account_id: selectedAccount?.id });
+        setDailyMetrics(metrics);
       } catch (error) {
         console.error("Error fetching dashboard:", error);
       } finally {

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # CORS — comma-separated origins in env, list here as default
     CORS_ORIGINS: str = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000"
+        "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,https://ethinos-cdp.pages.dev,https://main.ethinos-cdp.pages.dev"
     )
 
     @property

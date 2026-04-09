@@ -9,6 +9,12 @@ import logging
 
 logger = logging.getLogger("database")
 
+# Pre-hashed passwords (generated once, used at seed time)
+# These are bcrypt hashes for "admin123" and "viewer123"
+# To regenerate: python -c "from passlib.context import CryptContext; c = CryptContext(schemes=['bcrypt']); print(c.hash('admin123'))"
+ADMIN_PASSWORD_HASH = "$2b$12$/OHqk2waU5f4.tEWkrdgTO.RGVr6v7lRUZbzlL7q1pid36WglZdRK"  # admin123
+VIEWER_PASSWORD_HASH = "$2b$12$8tjG95Tg8Zk8ZGazQ88rgevHxwT62jXfRD1DV65Sh91xmKF5Zh1De"  # viewer123
+
 
 def seed_database():
     """Load all mock data into DuckDB."""
@@ -22,28 +28,38 @@ def seed_database():
     ]
 
     for acc in accounts:
-        conn.execute(
-            """
-            INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [acc["id"], acc["name"], acc["industry"], acc["currency"], acc["client_type"], acc["platforms"], None, None, None, datetime.now()]
-        )
+        try:
+            conn.execute(
+                """
+                INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [acc["id"], acc["name"], acc["industry"], acc["currency"], acc["client_type"], acc["platforms"], None, None, None, datetime.now()]
+            )
+        except Exception:
+            pass  # Account already exists, skip
 
     # ========== USERS ==========
+    # Using pre-hashed passwords to avoid dependency issues
+    admin_hash = ADMIN_PASSWORD_HASH
+    viewer_hash = VIEWER_PASSWORD_HASH
+
     users = [
-        {"id": "user-001", "name": "Admin User", "email": "admin@ethinos.com", "password_hash": "hashed_admin_123", "role": "admin"},
-        {"id": "user-002", "name": "Viewer User", "email": "viewer@ethinos.com", "password_hash": "hashed_viewer_123", "role": "viewer"},
+        {"id": "user-001", "name": "Admin User", "email": "admin@ethinos.com", "password_hash": admin_hash, "role": "admin"},
+        {"id": "user-002", "name": "Viewer User", "email": "viewer@ethinos.com", "password_hash": viewer_hash, "role": "viewer"},
     ]
 
     for user in users:
-        conn.execute(
-            """
-            INSERT INTO users (id, name, email, password_hash, role, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            [user["id"], user["name"], user["email"], user["password_hash"], user["role"], datetime.now()]
-        )
+        try:
+            conn.execute(
+                """
+                INSERT INTO users (id, name, email, password_hash, role, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [user["id"], user["name"], user["email"], user["password_hash"], user["role"], datetime.now()]
+            )
+        except Exception:
+            pass  # User already exists, skip
 
     # ========== USER_ACCOUNTS ==========
     user_accounts = [
@@ -55,10 +71,13 @@ def seed_database():
     ]
 
     for ua in user_accounts:
-        conn.execute(
-            "INSERT INTO user_accounts (user_id, account_id) VALUES (?, ?)",
-            [ua["user_id"], ua["account_id"]]
-        )
+        try:
+            conn.execute(
+                "INSERT INTO user_accounts (user_id, account_id) VALUES (?, ?)",
+                [ua["user_id"], ua["account_id"]]
+            )
+        except Exception:
+            pass  # User-account mapping already exists, skip
 
     # ========== CAMPAIGNS ==========
     # All campaigns for acc-001 (TechStore) — 20 total

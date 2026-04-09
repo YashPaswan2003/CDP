@@ -1,0 +1,11 @@
+name = "ethinos-cdp"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "out"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "ethinos-uploads"
+
+[vars]
+NEXT_PUBLIC_API_URL = "https://api-production-456b.up.railway.app"

@@ -3,7 +3,8 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer, LineChart } from "@/components";
-import { generateDailyMetrics, getMockCampaigns } from "@/lib/mockData";
+import { getMockCampaigns } from "@/lib/mockData";
+import { fetchDailyMetrics } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -14,8 +15,12 @@ export default function MetaAnalytics() {
   const [selectedMetrics, setSelectedMetrics] = useState(["spend", "clicks"]);
 
   useEffect(() => {
-    setDailyMetrics(generateDailyMetrics());
-  }, []);
+    const loadMetrics = async () => {
+      const metrics = await fetchDailyMetrics({ account_id: selectedAccount?.id, platform: "meta" });
+      setDailyMetrics(metrics);
+    };
+    loadMetrics();
+  }, [selectedAccount?.id]);
 
   const metaMetrics = dailyMetrics.filter((m) => m.platform === "meta");
   const metaCampaigns = getMockCampaigns().filter((c) => c.platform === "meta");

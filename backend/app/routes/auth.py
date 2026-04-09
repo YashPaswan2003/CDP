@@ -1,91 +1,159 @@
-import uuid
-import json
-from datetime import datetime
-from fastapi import APIRouter, HTTPException
-from app.models.auth import RegisterRequest, LoginRequest, AuthResponse
+from jose import JWTError, jwt
+import bcrypt
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Header
+from app.models.auth import RegisterRequest, LoginRequest, AuthResponse, User
 from app.database.connection import get_connection
+from app.config import settings
 import logging
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# In-memory user store for Phase 0 (replace with database in Phase 1)
-users_db = {
-    "demo@example.com": {
-        "user_id": "550e8400-e29b-41d4-a716-446655440099",
-        "password": "demo123",  # In production, use hashed passwords
-        "name": "Demo User"
-    }
-}
+# JWT configuration
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-tokens_db = {}  # Simple token store for Phase 0
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt."""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(rounds=12)).decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify plain password against bcrypt hash."""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
+def create_access_token(user_id: str, role: str, name: str) -> str:
+    """Create JWT access token."""
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "name": name,
+        "exp": datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(authorization: str = Header(None)):
+    """FastAPI dependency to extract and verify JWT from Authorization header."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        role: str = payload.get("role")
+        name: str = payload.get("name")
+
+        if not user_id or not role:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        return {"id": user_id, "role": role, "name": name}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 
 @router.post("/register", response_model=AuthResponse)
 def register(request: RegisterRequest):
-    """Register a new user."""
-    if request.email in users_db:
+    """Register a new user — inserts into users table."""
+    conn = get_connection()
+
+    # Check if user already exists
+    existing = conn.execute(
+        "SELECT id FROM users WHERE email = ?",
+        [request.email]
+    ).fetchall()
+
+    if existing:
         logger.error(f"Registration failed: {request.email} already exists")
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    user_id = str(uuid.uuid4())
-    users_db[request.email] = {
-        "user_id": user_id,
-        "password": request.password,
-        "name": request.name
-    }
+    # Hash password
+    password_hash = hash_password(request.password)
 
-    # Generate token
-    token = str(uuid.uuid4())
-    tokens_db[token] = {"email": request.email, "user_id": user_id}
+    # Insert user into database (default role is 'viewer')
+    user_id = None
+    try:
+        conn.execute(
+            "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
+            [request.name, request.email, password_hash, "viewer"]
+        )
+        # Retrieve the inserted user's ID
+        result = conn.execute(
+            "SELECT id FROM users WHERE email = ?",
+            [request.email]
+        ).fetchall()
+        user_id = result[0][0] if result else None
+    except Exception as e:
+        logger.error(f"Registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
 
-    logger.info(f"User registered: {request.email}")
+    if not user_id:
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+    # Create JWT token
+    token = create_access_token(user_id, "viewer", request.name)
+
+    logger.info(f"User registered: {request.email} (id={user_id})")
 
     return AuthResponse(
         access_token=token,
         token_type="bearer",
-        user_id=user_id,
-        email=request.email,
-        name=request.name
+        user=User(id=user_id, name=request.name, role="viewer")
     )
+
 
 @router.post("/login", response_model=AuthResponse)
 def login(request: LoginRequest):
-    """Login with email and password."""
-    if request.email not in users_db:
+    """Login with email and password — queries users table, returns JWT."""
+    conn = get_connection()
+
+    # Query user from database
+    result = conn.execute(
+        "SELECT id, name, password_hash, role FROM users WHERE email = ?",
+        [request.email]
+    ).fetchall()
+
+    if not result:
         logger.error(f"Login failed: {request.email} not found")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    user = users_db[request.email]
-    if user["password"] != request.password:
+    user_id, name, password_hash, role = result[0]
+
+    # Verify password
+    if not verify_password(request.password, password_hash):
         logger.error(f"Login failed: Invalid password for {request.email}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Generate token
-    token = str(uuid.uuid4())
-    tokens_db[token] = {"email": request.email, "user_id": user["user_id"]}
+    # Create JWT token
+    token = create_access_token(user_id, role, name)
 
-    logger.info(f"User logged in: {request.email}")
+    logger.info(f"User logged in: {request.email} (id={user_id}, role={role})")
 
     return AuthResponse(
         access_token=token,
         token_type="bearer",
-        user_id=user["user_id"],
-        email=request.email,
-        name=user["name"]
+        user=User(id=user_id, name=name, role=role)
     )
 
+
+@router.get("/me")
+def get_current_user_info(current_user=None):
+    """Get current user info from JWT token."""
+    # This is automatically called through the dependency
+    # In actual usage, include Depends(get_current_user) in the endpoint signature
+    pass
+
+
 @router.post("/logout")
-def logout(token: str = None):
-    """Logout by invalidating token."""
-    if token and token in tokens_db:
-        del tokens_db[token]
-        logger.info("User logged out")
+def logout(authorization: str = Header(None)):
+    """Logout — stateless JWT, just return success."""
+    if not authorization:
         return {"status": "logged_out"}
 
-    return {"status": "already_logged_out"}
-
-def verify_token(token: str):
-    """Verify JWT token (mock implementation for Phase 0)."""
-    if token not in tokens_db:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return tokens_db[token]
+    # In a stateless JWT system, client just deletes the token
+    logger.info("User logged out")
+    return {"status": "logged_out"}

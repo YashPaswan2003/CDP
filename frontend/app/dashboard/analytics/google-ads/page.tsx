@@ -3,7 +3,7 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer, LineChart } from "@/components";
-import { generateDailyMetrics } from "@/lib/mockData";
+import { fetchDailyMetrics } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -16,17 +16,20 @@ export default function GoogleAdsAnalytics() {
   const [dateTo, setDateTo] = useState<string>("");
 
   useEffect(() => {
-    const metrics = generateDailyMetrics();
-    setDailyMetrics(metrics);
+    const loadMetrics = async () => {
+      const metrics = await fetchDailyMetrics({ account_id: selectedAccount?.id, platform: "google" });
+      setDailyMetrics(metrics);
 
-    // Set default date range (last 30 days)
-    if (metrics.length > 0) {
-      const lastDate = new Date(metrics[metrics.length - 1].date);
-      const firstDate = new Date(metrics[0].date);
-      setDateFrom(firstDate.toISOString().split("T")[0]);
-      setDateTo(lastDate.toISOString().split("T")[0]);
-    }
-  }, []);
+      // Set default date range (last 30 days)
+      if (metrics.length > 0) {
+        const lastDate = new Date(metrics[metrics.length - 1].date);
+        const firstDate = new Date(metrics[0].date);
+        setDateFrom(firstDate.toISOString().split("T")[0]);
+        setDateTo(lastDate.toISOString().split("T")[0]);
+      }
+    };
+    loadMetrics();
+  }, [selectedAccount?.id]);
 
   const googleMetrics = dailyMetrics.filter((m) => {
     if (m.platform !== "google") return false;

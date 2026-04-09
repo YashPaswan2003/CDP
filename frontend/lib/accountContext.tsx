@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { jwtDecode } from "jwt-decode";
 
 export interface ClientAccount {
   id: string;
@@ -65,24 +66,6 @@ const MOCK_ACCOUNTS: ClientAccount[] = [
   },
 ];
 
-// Mock users: admin sees ethinos + kotak-mf, viewer sees only kotak-mf
-const MOCK_USERS: UserProfile[] = [
-  {
-    id: "user-001",
-    name: "Admin User",
-    email: "admin@ethinos.com",
-    role: "admin",
-    accessibleAccountIds: ["ethinos", "kotak-mf"],
-  },
-  {
-    id: "user-002",
-    name: "Viewer User",
-    email: "viewer@ethinos.com",
-    role: "viewer",
-    accessibleAccountIds: ["kotak-mf"],
-  },
-];
-
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
@@ -99,31 +82,53 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     initializeAccounts();
   }, []);
 
-  // Initialize user and account from localStorage AFTER accounts are loaded
+  // Initialize user and account from JWT token AFTER accounts are loaded
   useEffect(() => {
     if (!accountsLoaded) return; // Wait for accounts to load from API
 
-    const storedUserId = localStorage.getItem("ethinos_user_id") || "user-001";
-    const storedAccountId = localStorage.getItem("ethinos_account_id");
+    // Get token from localStorage
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    const user = MOCK_USERS.find((u) => u.id === storedUserId) || MOCK_USERS[0];
-    setCurrentUser(user);
-
-    // Default to ethinos account for admin, first accessible account for others
-    const defaultAccountId =
-      user.role === "admin" ? "ethinos" : user.accessibleAccountIds[0] || "kotak-mf";
-
-    // Admin always starts at master account; non-admin respects stored preference
-    let selectedId = defaultAccountId;
-    if (user.role !== "admin" && storedAccountId) {
-      const storedAccount = accounts.find(a => a.id === storedAccountId);
-      if (storedAccount && user.accessibleAccountIds.includes(storedAccountId)) {
-        selectedId = storedAccountId;
-      }
+    if (!token) {
+      // No token — user not logged in, layout will redirect to /auth
+      setIsLoading(false);
+      return;
     }
-    setSelectedAccountId(selectedId);
+
+    // Decode JWT to get user info
+    try {
+      const decoded = jwtDecode<{ sub: string; role: string; name: string }>(token);
+      const user: UserProfile = {
+        id: decoded.sub,
+        name: decoded.name,
+        email: "",
+        role: decoded.role as UserProfile["role"],
+        accessibleAccountIds: accounts.map(a => a.id), // Will be filtered by what API returns
+      };
+      setCurrentUser(user);
+
+      // Default to ethinos account for admin, first account for others
+      const defaultAccountId = user.role === "admin" ? (accounts[0]?.id || "ethinos") : (accounts[0]?.id || "");
+      const storedAccountId = localStorage.getItem("ethinos_account_id");
+
+      // Admin always defaults to first account (ethinos), non-admin respects stored preference
+      let selectedId = defaultAccountId;
+      if (user.role !== "admin" && storedAccountId) {
+        const storedAccount = accounts.find(a => a.id === storedAccountId);
+        if (storedAccount && accounts.map(a => a.id).includes(storedAccountId)) {
+          selectedId = storedAccountId;
+        }
+      }
+      setSelectedAccountId(selectedId);
+    } catch (err) {
+      // Invalid token
+      localStorage.removeItem("token");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(false);
-  }, [accountsLoaded, accounts]);
+  }, [accountsLoaded]);
 
   // Get accounts accessible to the current user
   const accessibleAccounts = currentUser
@@ -151,7 +156,12 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const refreshAccounts = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/accounts`);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch(`${apiUrl}/api/accounts`, { headers });
       if (res.ok) {
         const data = await res.json();
         // Map API response to ClientAccount shape
@@ -168,7 +178,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
             accent: a.brand_accent || "#ffa600",
           },
         }));
-        setAccounts(apiAccounts.length > 0 ? apiAccounts : MOCK_ACCOUNTS);
+        const loaded = apiAccounts.length > 0 ? apiAccounts : MOCK_ACCOUNTS;
+        setAccounts(loaded);
+        // Update current user's accessibleAccountIds to match API response
+        setCurrentUser(prev => prev ? {
+          ...prev,
+          accessibleAccountIds: loaded.map(a => a.id)
+        } : null);
       } else {
         console.warn("Failed to fetch accounts from API, using mock data");
         setAccounts([...MOCK_ACCOUNTS]);

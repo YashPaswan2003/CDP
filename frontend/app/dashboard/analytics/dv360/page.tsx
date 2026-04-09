@@ -3,7 +3,8 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer, LineChart } from "@/components";
-import { generateDailyMetrics, getMockCampaigns } from "@/lib/mockData";
+import { getMockCampaigns } from "@/lib/mockData";
+import { fetchDailyMetrics } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -14,8 +15,12 @@ export default function DV360Analytics() {
   const [selectedMetrics, setSelectedMetrics] = useState(["spend", "impressions"]);
 
   useEffect(() => {
-    setDailyMetrics(generateDailyMetrics());
-  }, []);
+    const loadMetrics = async () => {
+      const metrics = await fetchDailyMetrics({ account_id: selectedAccount?.id, platform: "dv360" });
+      setDailyMetrics(metrics);
+    };
+    loadMetrics();
+  }, [selectedAccount?.id]);
 
   const dv360Metrics = dailyMetrics.filter((m) => m.platform === "dv360");
   const dv360Campaigns = getMockCampaigns().filter((c) => c.platform === "dv360");

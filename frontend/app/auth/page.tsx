@@ -22,12 +22,31 @@ export default function AuthPage() {
     setError("");
 
     try {
-      const userId = email.includes("viewer") ? "user-002" : "user-001";
-      setAuthToken("mock-token-" + userId);
-      localStorage.setItem("ethinos_user_id", userId);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const endpoint = isLogin ? "/auth/login" : "/auth/register";
+
+      const response = await fetch(`${apiUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isLogin
+            ? { email, password }
+            : { email, password, name }
+        ),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.detail || "Authentication failed");
+        return;
+      }
+
+      const data = await response.json();
+      setAuthToken(data.access_token);
+      localStorage.setItem("ethinos_user_id", data.user.id);
       router.push("/dashboard");
     } catch (err: any) {
-      setError("Login failed");
+      setError("Could not connect to server");
     } finally {
       setLoading(false);
     }
@@ -208,7 +227,7 @@ export default function AuthPage() {
           </p>
           {isLogin && (
             <p className="text-xs text-slate-500">
-              Tip: Use email with "viewer" for viewer role, otherwise admin
+              Demo: admin@ethinos.com / admin123 or viewer@ethinos.com / viewer123
             </p>
           )}
         </motion.div>

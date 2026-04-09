@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChartContainer, FunnelChart } from "@/components";
-import { generateDailyMetrics } from "@/lib/mockData";
+import { fetchDailyMetrics } from "@/lib/api";
 
 export default function FunnelPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<"all" | "google" | "meta" | "dv360">("all");
+  const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
 
-  const dailyMetrics = generateDailyMetrics();
+  useEffect(() => {
+    const loadMetrics = async () => {
+      const metrics = await fetchDailyMetrics();
+      setDailyMetrics(metrics);
+    };
+    loadMetrics();
+  }, []);
 
   // Calculate funnel metrics
   const calculateFunnel = (platform: "all" | "google" | "meta" | "dv360") => {

@@ -1,16 +1,29 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChartContainer, LineChart, BarChart } from "@/components";
-import { generateDailyMetrics, getPeriodComparisons } from "@/lib/mockData";
+import { fetchDailyMetrics, fetchPeriodComparison } from "@/lib/api";
+import { getPeriodComparisons, PeriodComparison } from "@/lib/mockData";
 
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d">("30d");
   const [compareToPreview, setCompareToPreview] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<"spend" | "revenue" | "ctr" | "roas" | "cvr">("spend");
+  const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
+  const [periodData, setPeriodData] = useState<any>(getPeriodComparisons());
 
-  const dailyMetrics = generateDailyMetrics();
-  const periodData = getPeriodComparisons();
+  useEffect(() => {
+    const loadData = async () => {
+      const metrics = await fetchDailyMetrics();
+      setDailyMetrics(metrics);
+
+      const period = await fetchPeriodComparison();
+      if (period) {
+        setPeriodData(period);
+      }
+    };
+    loadData();
+  }, []);
 
   // Aggregate metrics by platform
   const platformComparison = useMemo(() => {
@@ -153,7 +166,7 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody>
-              {currentPeriodData.map((row, idx) => (
+              {currentPeriodData.map((row: PeriodComparison, idx: number) => (
                 <tr key={idx} className="border-b border-border-primary hover:bg-surface-hover transition-colors">
                   <td className="py-3 px-4 text-text-primary font-medium">{row.metric}</td>
                   <td className="text-right py-3 px-4 text-text-primary font-semibold">

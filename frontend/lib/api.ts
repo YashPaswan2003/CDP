@@ -23,12 +23,25 @@ async function fetchWithFallback<T>(
   }
 
   try {
+    // Get JWT token from localStorage
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    const headersObj: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (options?.headers) {
+      const existingHeaders = options.headers as Record<string, string>;
+      Object.assign(headersObj, existingHeaders);
+    }
+
+    if (token) {
+      headersObj['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers: headersObj,
     });
 
     if (!response.ok) {
