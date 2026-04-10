@@ -517,16 +517,6 @@ export default function PortfolioPage() {
     setRecommendations(recommendations.filter(r => r.id !== recId));
   };
 
-  // Handle recommendation action (View button)
-  const handleRecommendationAction = (recId: string) => {
-    const rec = recommendations.find(r => r.id === recId);
-    if (rec) {
-      // Deep link to platform analytics page
-      // TODO: Implement in Task 6
-      console.log('Navigate to platform:', rec.platform, 'campaign:', rec.campaign);
-    }
-  };
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       {/* Alerts Strip */}
@@ -739,7 +729,6 @@ export default function PortfolioPage() {
       <RecommendationPanel
         recommendations={recommendations}
         onDismiss={handleDismissRecommendation}
-        onAction={handleRecommendationAction}
         accountId={selectedAccount?.id}
         dateFrom={monthFrom}
         dateTo={monthTo}
