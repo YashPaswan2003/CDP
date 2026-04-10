@@ -15,6 +15,7 @@ from app.routes.auth import get_current_user
 import logging
 import sqlite3
 from datetime import datetime, timedelta
+from typing import Optional, List
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/alerts", tags=["alerts"])
@@ -23,9 +24,9 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 def detect_alerts(
     account_id: str,
     conn: sqlite3.Connection,
-    date_from: str | None = None,  # TODO: Not yet used (for Phase 2)
-    date_to: str | None = None     # TODO: Not yet used (for Phase 2)
-) -> list[Alert]:
+    date_from: Optional[str] = None,  # TODO: Not yet used (for Phase 2)
+    date_to: Optional[str] = None     # TODO: Not yet used (for Phase 2)
+) -> List[Alert]:
     """
     Detect anomalies and health issues for an account.
 
