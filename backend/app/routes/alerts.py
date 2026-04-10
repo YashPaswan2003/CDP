@@ -31,7 +31,7 @@ def detect_alerts(
     Detect anomalies and health issues for an account.
 
     Rules:
-    1. ROAS drop > 40% vs previous period → error
+    1. ROAS drop > 40% vs previous period (current_roas < previous_roas * 0.6) → error
     2. Meta frequency > 5.0 → warning
     3. Budget utilization 95%+ → success
     4. Campaign paused unexpectedly → error
@@ -47,7 +47,7 @@ def detect_alerts(
         # Get campaigns for this account
         campaigns_result = conn.execute(
             """
-            SELECT id, name, platform, status, budget, spent, roas, frequency
+            SELECT id, name, platform, status, budget, spent, roas, previous_roas, frequency
             FROM campaigns
             WHERE account_id = ?
             ORDER BY created_at DESC
@@ -69,18 +69,21 @@ def detect_alerts(
                 'budget': row[4],
                 'spent': row[5],
                 'roas': row[6],
-                'frequency': row[7]
+                'previous_roas': row[7],
+                'frequency': row[8]
             })
 
         # Rule 1: ROAS drop > 40%
-        # MVP RULE 1: ROAS below 1.2x (proxy for ~40% drop vs previous period)
-        # TODO: Implement actual period-over-period comparison once historical data available
+        # Check if current ROAS dropped more than 40% vs previous period
+        # Formula: current_roas < previous_roas * 0.6 (i.e., 40% drop)
         for campaign in campaigns:
-            if campaign['roas'] is not None and campaign['roas'] < 1.2:
+            if (campaign['roas'] is not None and campaign['previous_roas'] is not None and
+                campaign['roas'] < campaign['previous_roas'] * 0.6):
+                drop_pct = ((campaign['previous_roas'] - campaign['roas']) / campaign['previous_roas']) * 100
                 alerts.append(Alert(
                     id=f"alert_roas_{campaign['id']}",
                     severity='error',
-                    message=f"ROAS dropped 40% vs last week on {campaign['platform'].capitalize()} ({campaign['name']})",
+                    message=f"ROAS dropped {drop_pct:.0f}% on {campaign['platform'].capitalize()} ({campaign['name']})",
                     campaign=campaign['name'],
                     platform=campaign['platform']
                 ))

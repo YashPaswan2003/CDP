@@ -69,6 +69,7 @@ def create_tables(conn):
             cpc         DECIMAL(8,4),
             cvr         DECIMAL(8,4),
             roas        DECIMAL(8,4),
+            previous_roas DECIMAL(8,4),
             reach       BIGINT,
             frequency   DECIMAL(8,4),
             created_at  TIMESTAMP DEFAULT NOW()
