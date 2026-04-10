@@ -114,16 +114,31 @@ def seed_database():
         {"id": "camp-meta-007", "account_id": "kotak-mf", "name": "Lead Gen", "platform": "meta", "type": None, "objective": "Lead Generation", "budget": 17000, "spent": 15300, "impressions": 195000, "clicks": 10465, "conversions": 396, "revenue": 59600, "ctr": 5.37, "cpc": 1.46, "cvr": 3.79, "roas": 3.89, "reach": 142000, "frequency": 1.37},
     ]
 
-    all_campaigns = google_campaigns + dv360_campaigns + meta_campaigns
+    # Alert rule test campaigns for ethinos account (4 campaigns to trigger each rule)
+    alert_test_campaigns = [
+        # Rule 1: ROAS Drop — Current ROAS < Previous ROAS × 0.8
+        {"id": "camp-alert-01", "account_id": "ethinos", "name": "YouTube Branding Ethinos", "platform": "google", "type": "YouTube", "objective": None, "budget": 28000, "spent": 25000, "impressions": 140000, "clicks": 5200, "conversions": 145, "revenue": 20700, "ctr": 3.71, "cpc": 4.81, "cvr": 2.79, "roas": 1.1, "reach": None, "frequency": None, "previous_roas": 2.0},
+        # Rule 2: Audience Fatigue (Meta) — Frequency > 5.0
+        {"id": "camp-alert-02", "account_id": "ethinos", "name": "Meta Awareness Ethinos", "platform": "meta", "type": None, "objective": "Awareness", "budget": 20000, "spent": 19000, "impressions": 380000, "clicks": 4560, "conversions": 95, "revenue": 14250, "ctr": 1.2, "cpc": 4.17, "cvr": 2.08, "roas": 0.75, "reach": 65000, "frequency": 5.8},
+        # Rule 3: Budget Utilization ≥ 95% — Spent ≥ 95% of budget
+        {"id": "camp-alert-03", "account_id": "ethinos", "name": "DV360 Prospecting", "platform": "dv360", "type": None, "objective": None, "budget": 1000, "spent": 950, "impressions": 142000, "clicks": 1420, "conversions": 57, "revenue": 8550, "ctr": 1.0, "cpc": 0.67, "cvr": 4.02, "roas": 9.0, "reach": None, "frequency": None},
+        # Rule 4: Paused Campaign — Campaign status = "paused"
+        {"id": "camp-alert-04", "account_id": "ethinos", "name": "Search Retargeting", "platform": "google", "type": "Search", "objective": None, "budget": 15000, "spent": 8500, "impressions": 85000, "clicks": 4250, "conversions": 212, "revenue": 31800, "ctr": 5.0, "cpc": 2.0, "cvr": 4.99, "roas": 3.74, "reach": None, "frequency": None, "status_override": "paused"},
+    ]
+
+    all_campaigns = google_campaigns + dv360_campaigns + meta_campaigns + alert_test_campaigns
 
     for camp in all_campaigns:
+        # Determine status: use status_override if present, otherwise default to "active"
+        status = camp.get("status_override", "active")
+
         conn.execute(
             """
             INSERT INTO campaigns (id, account_id, name, platform, type, objective, status, budget, spent, impressions, clicks, conversions, revenue, ctr, cpc, cvr, roas, reach, frequency, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
-                camp["id"], camp["account_id"], camp["name"], camp["platform"], camp["type"], camp.get("objective"), "active",
+                camp["id"], camp["account_id"], camp["name"], camp["platform"], camp["type"], camp.get("objective"), status,
                 camp["budget"], camp["spent"], camp["impressions"], camp["clicks"], camp["conversions"], camp["revenue"],
                 camp["ctr"], camp["cpc"], camp["cvr"], camp["roas"], camp["reach"], camp["frequency"], datetime.now()
             ]
