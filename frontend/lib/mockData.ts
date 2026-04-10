@@ -2292,23 +2292,23 @@ export function getPeriodComparisons(): {
 export function generateDailyMetrics(): DailyMetric[] {
   const metrics: DailyMetric[] = [];
 
-  // Generate from 90 days ago to today
+  // Generate from 30 days ago to today
   const today = new Date();
   const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - 90);
+  startDate.setDate(startDate.getDate() - 30);
 
   // Realistic patterns: weekday higher, weekend lower, with upward trend and variation
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 30; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
     const dateStr = date.toISOString().split("T")[0];
     const dayOfWeek = date.getDay(); // 0=Sunday, 6=Saturday
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-    // Trend: increase over 90 days (days 1-30 baseline, 31-60 +15%, 61-90 +30%)
+    // Trend: increase over 30 days (days 1-10 baseline, 11-20 +15%, 21-30 +30%)
     let trendMultiplier = 1.0;
-    if (i >= 60) trendMultiplier = 1.3;
-    else if (i >= 30) trendMultiplier = 1.15;
+    if (i >= 20) trendMultiplier = 1.3;
+    else if (i >= 10) trendMultiplier = 1.15;
 
     // Weekend modifier
     const weekendMod = isWeekend ? 0.75 : 1.0;
