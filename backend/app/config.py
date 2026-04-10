@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
+from typing import List
 
 
 class Settings(BaseSettings):
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     )
 
     @property
-    def cors_origins_list(self) -> list[str]:
+    def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     # Logging
