@@ -36,7 +36,7 @@ interface AccountContextType {
 
 const AccountContext = createContext<AccountContextType | null>(null);
 
-// Mock data: 1 master account + 1 client account (Kotak Mutual Fund)
+// Mock data: 1 master account (Ethinos)
 const MOCK_ACCOUNTS: ClientAccount[] = [
   {
     id: "ethinos",
@@ -46,22 +46,9 @@ const MOCK_ACCOUNTS: ClientAccount[] = [
     platforms: ["google", "dv360", "meta"],
     clientType: "web",
     brandColors: {
-      primary: "#003f5c",
-      secondary: "#954e9b",
-      accent: "#ffa600",
-    },
-  },
-  {
-    id: "kotak-mf",
-    name: "Kotak Mutual Fund",
-    industry: "Financial Services",
-    currency: "INR",
-    platforms: ["google", "dv360", "meta"],
-    clientType: "web",
-    brandColors: {
       primary: "#5C6BC0",
-      secondary: "#3F51B5",
-      accent: "#F79009",
+      secondary: "#4338CA",
+      accent: "#F59E0B",
     },
   },
 ];
@@ -173,9 +160,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           platforms: Array.isArray(a.platforms) ? a.platforms : (a.platforms?.split(",") || ["google"]) as ClientAccount["platforms"],
           clientType: (a.client_type as ClientAccount["clientType"]) || "web",
           brandColors: {
-            primary: a.brand_primary || "#003f5c",
-            secondary: a.brand_secondary || "#954e9b",
-            accent: a.brand_accent || "#ffa600",
+            primary: a.brand_primary || "#5C6BC0",
+            secondary: a.brand_secondary || "#4338CA",
+            accent: a.brand_accent || "#F59E0B",
           },
         }));
         const loaded = apiAccounts.length > 0 ? apiAccounts : MOCK_ACCOUNTS;

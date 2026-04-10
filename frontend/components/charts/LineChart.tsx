@@ -29,22 +29,22 @@ export default function LineChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsLineChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2D3154" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
         <XAxis
           dataKey={xAxisKey}
-          stroke="#9CA3AF"
+          stroke="#D1D5DB"
           style={{ fontSize: "12px" }}
-          tick={{ fill: "#9CA3AF" }}
+          tick={{ fill: "#6B7280" }}
         />
-        <YAxis stroke="#9CA3AF" style={{ fontSize: "12px" }} tick={{ fill: "#9CA3AF" }} />
+        <YAxis stroke="#D1D5DB" style={{ fontSize: "12px" }} tick={{ fill: "#6B7280" }} />
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1E2034",
-            border: "1px solid #2D3154",
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E5E7EB",
             borderRadius: "8px",
-            color: "#FFFFFF",
+            color: "#111827",
           }}
-          labelStyle={{ color: "#FFFFFF" }}
+          labelStyle={{ color: "#111827" }}
           formatter={(value: any) => {
             if (typeof value === "number") {
               return value.toLocaleString(undefined, {
@@ -59,7 +59,7 @@ export default function LineChart({
           <Legend
             wrapperStyle={{ paddingTop: "20px" }}
             iconType="line"
-            formatter={(value) => <span style={{ color: "#9CA3AF" }}>{value}</span>}
+            formatter={(value) => <span style={{ color: "#6B7280" }}>{value}</span>}
           />
         )}
         {dataKeys.map((dk) => (

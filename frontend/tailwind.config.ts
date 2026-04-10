@@ -52,10 +52,10 @@ const config: Config = {
         "fira-sans": ["Fira Sans", ...defaultTheme.fontFamily.sans],
       },
       backgroundColor: {
-        base: "#0a0e27",
+        base: "#F7F8FA",
       },
       borderColor: {
-        primary: "#2a2f4a",
+        primary: "#E5E7EB",
       },
     },
   },

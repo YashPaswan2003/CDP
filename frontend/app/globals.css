@@ -14,8 +14,7 @@ html {
 
 body {
   @apply text-text-primary font-fira-sans overflow-x-hidden;
-  background: linear-gradient(135deg, #13172E 0%, #1A1D3A 100%);
-  background-attachment: fixed;
+  background: #F7F8FA;
 }
 
 /* Code/Heading typography */
@@ -64,13 +63,13 @@ button:disabled {
 /* Cards */
 .card {
   @apply rounded-lg p-4;
-  background-color: #1E2034;
-  border: 1px solid #2D3154;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
 }
 
 .card:hover {
-  border-color: #5C6BC0;
-  background-color: #252840;
+  border-color: #D1D5DB;
+  background-color: #FAFAFA;
   transition: all 200ms;
 }
 
@@ -90,11 +89,11 @@ button:disabled {
 }
 
 .bg-subtle {
-  background-color: #1E2034;
+  background-color: #F3F4F6;
 }
 
 .border-subtle {
-  border-color: #2D3154;
+  border-color: #E5E7EB;
 }
 
 /* Focus ring utility */
