@@ -119,9 +119,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   // Get accounts accessible to the current user
   const accessibleAccounts = currentUser
-    ? accounts.filter((acc) =>
-        currentUser.accessibleAccountIds.includes(acc.id)
-      )
+    ? accounts
+        .filter((acc) =>
+          currentUser.accessibleAccountIds.includes(acc.id)
+        )
+        .filter((acc) => acc.id !== "kotak-mf") // Exclude Kotak account
     : [];
 
   // Get the currently selected account
