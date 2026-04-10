@@ -1,4 +1,4 @@
-fastapi==0.104.1
+fastapi==0.104.1  # Alerts endpoint fix deployed
 uvicorn==0.24.0
 duckdb==0.9.2
 pydantic==2.5.0
