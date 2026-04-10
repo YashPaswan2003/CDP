@@ -2289,6 +2289,135 @@ export function getPeriodComparisons(): {
   };
 }
 
+/**
+ * Platform-specific baseline metrics and configurations
+ * Each platform has distinct baseline values and coefficients for spend, impressions, clicks, etc.
+ */
+interface PlatformBaseline {
+  platform: "google" | "dv360" | "meta";
+  baslineSpend: number;
+  baselineImpressions: number;
+  baselineClicks: number;
+  baselineViews: number;
+  conversionRate: number;
+  revenueMultiplier: number;
+  reachPercentage: number;
+  frequency: number;
+  vtr: number;
+  viewability: number;
+  engagementRate: number;
+  vtcPercentage: number;
+  weekendSpendMultiplier: number; // Meta: 1.1 (higher), Google/DV360: 1.0 (neutral)
+}
+
+const PLATFORM_BASELINES: Record<"google" | "dv360" | "meta", PlatformBaseline> = {
+  google: {
+    platform: "google",
+    baslineSpend: 4600,
+    baselineImpressions: 49400,
+    baselineClicks: 1894,
+    baselineViews: 0,
+    conversionRate: 0.048,
+    revenueMultiplier: 3.0,
+    reachPercentage: 0.65,
+    frequency: 2.1,
+    vtr: 0.32,
+    viewability: 0.72,
+    engagementRate: 0.024,
+    vtcPercentage: 0,
+    weekendSpendMultiplier: 1.0, // No special weekend effect
+  },
+  dv360: {
+    platform: "dv360",
+    baslineSpend: 5720,
+    baselineImpressions: 241333,
+    baselineClicks: 2830,
+    baselineViews: 50000,
+    conversionRate: 0.027,
+    revenueMultiplier: 2.03,
+    reachPercentage: 0.58,
+    frequency: 4.2,
+    vtr: 0.45,
+    viewability: 0.68,
+    engagementRate: 0.031,
+    vtcPercentage: 0.35,
+    weekendSpendMultiplier: 1.0, // No special weekend effect
+  },
+  meta: {
+    platform: "meta",
+    baslineSpend: 4030,
+    baselineImpressions: 77000,
+    baselineClicks: 2127,
+    baselineViews: 0,
+    conversionRate: 0.0437,
+    revenueMultiplier: 3.44,
+    reachPercentage: 0.42,
+    frequency: 6.8,
+    vtr: 0,
+    viewability: 0,
+    engagementRate: 0.048,
+    vtcPercentage: 0,
+    weekendSpendMultiplier: 0.9, // Meta weekday effect; weekends are 1.1x (see createPlatformMetric)
+  },
+};
+
+/**
+ * Creates a daily metric entry for a specific platform
+ * Applies trend multiplier, weekend modifier, and day-to-day variation
+ *
+ * Meta has a special weekend spend multiplier (1.1 vs 0.9) because social platforms
+ * see higher user activity/spend on weekends, opposite to search/display patterns
+ */
+function createPlatformMetric(
+  dateStr: string,
+  baseline: PlatformBaseline,
+  trendMultiplier: number,
+  weekendMod: number,
+  dayVariation: number,
+  isWeekend: boolean
+): DailyMetric {
+  // Apply platform-specific weekend spend effect
+  // Meta: 1.1x on weekends, 0.9x on weekdays (higher social activity on weekends)
+  // Google/DV360: 1.0x always (no special weekend effect)
+  const weekendSpendEffect = isWeekend ? 1.1 : baseline.weekendSpendMultiplier;
+
+  const spend = Math.round(
+    baseline.baslineSpend * trendMultiplier * weekendMod * dayVariation * weekendSpendEffect
+  );
+  const impressions = Math.round(
+    baseline.baselineImpressions * trendMultiplier * weekendMod * dayVariation
+  );
+  const clicks = Math.round(
+    baseline.baselineClicks * trendMultiplier * weekendMod * dayVariation
+  );
+  const views = baseline.baselineViews > 0
+    ? Math.round(baseline.baselineViews * trendMultiplier * weekendMod * dayVariation)
+    : 0;
+
+  const conversions = Math.round(clicks * baseline.conversionRate);
+
+  return {
+    date: dateStr,
+    platform: baseline.platform,
+    spend,
+    revenue: Math.round(spend * baseline.revenueMultiplier),
+    impressions,
+    clicks,
+    conversions,
+    views,
+    reach: Math.round(impressions * baseline.reachPercentage),
+    frequency: baseline.frequency,
+    cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
+    vtr: baseline.vtr,
+    cpv: views > 0 ? spend / views : 0,
+    viewability: baseline.viewability,
+    thruPlays: views > 0 ? Math.round(views * 0.6) : 0,
+    engagementRate: baseline.engagementRate,
+    vtc: baseline.vtcPercentage > 0 ? Math.round(conversions * baseline.vtcPercentage) : 0,
+    cpa: conversions > 0 ? spend / conversions : 0,
+  };
+}
+
 export function generateDailyMetrics(): DailyMetric[] {
   const metrics: DailyMetric[] = [];
 
@@ -2310,94 +2439,18 @@ export function generateDailyMetrics(): DailyMetric[] {
     if (i >= 20) trendMultiplier = 1.3;
     else if (i >= 10) trendMultiplier = 1.15;
 
-    // Weekend modifier
+    // Weekend modifier (general pattern: weekends see less spend than weekdays)
     const weekendMod = isWeekend ? 0.75 : 1.0;
 
     // Daily variation (pseudo-random but deterministic)
-    const dayVariation = (Math.sin(i * 0.5) * 0.1 + 1.0);
+    const dayVariation = Math.sin(i * 0.5) * 0.1 + 1.0;
 
-    // Google Ads: Search-heavy, steady performance
-    const googleSpend = Math.round(4600 * trendMultiplier * weekendMod * dayVariation);
-    const googleImpressions = Math.round(49400 * trendMultiplier * weekendMod * dayVariation);
-    const googleClicks = Math.round(1894 * trendMultiplier * weekendMod * dayVariation);
-
-    const googleConversions = Math.round(googleClicks * 0.048);
-    metrics.push({
-      date: dateStr,
-      platform: "google",
-      spend: googleSpend,
-      revenue: Math.round(googleSpend * 3),
-      impressions: googleImpressions,
-      clicks: googleClicks,
-      conversions: googleConversions,
-      views: 0,
-      reach: Math.round(googleImpressions * 0.65),
-      frequency: 2.1,
-      cpm: googleImpressions > 0 ? (googleSpend / googleImpressions) * 1000 : 0,
-      vtr: 0.32,
-      cpv: 0,
-      viewability: 0.72,
-      thruPlays: 0,
-      engagementRate: 0.024,
-      vtc: 0,
-      cpa: googleConversions > 0 ? googleSpend / googleConversions : 0,
-    });
-
-    // DV360: Display/Video, higher volume
-    const dv360Spend = Math.round(5720 * trendMultiplier * weekendMod * dayVariation);
-    const dv360Impressions = Math.round(241333 * trendMultiplier * weekendMod * dayVariation);
-    const dv360Clicks = Math.round(2830 * trendMultiplier * weekendMod * dayVariation);
-    const dv360Views = Math.round(50000 * trendMultiplier * weekendMod * dayVariation);
-
-    const dv360Conversions = Math.round(dv360Clicks * 0.027);
-    metrics.push({
-      date: dateStr,
-      platform: "dv360",
-      spend: dv360Spend,
-      revenue: Math.round(dv360Spend * 2.03),
-      impressions: dv360Impressions,
-      clicks: dv360Clicks,
-      conversions: dv360Conversions,
-      views: dv360Views,
-      reach: Math.round(dv360Impressions * 0.58),
-      frequency: 4.2,
-      cpm: dv360Impressions > 0 ? (dv360Spend / dv360Impressions) * 1000 : 0,
-      vtr: 0.45,
-      cpv: dv360Views > 0 ? dv360Spend / dv360Views : 0,
-      viewability: 0.68,
-      thruPlays: 0,
-      engagementRate: 0.031,
-      vtc: Math.round(dv360Conversions * 0.35),
-      cpa: dv360Conversions > 0 ? dv360Spend / dv360Conversions : 0,
-    });
-
-    // Meta: Social, highly variable
-    const metaSpend = Math.round(4030 * trendMultiplier * weekendMod * dayVariation * (isWeekend ? 1.1 : 0.9));
-    const metaImpressions = Math.round(77000 * trendMultiplier * weekendMod * dayVariation);
-    const metaClicks = Math.round(2127 * trendMultiplier * weekendMod * dayVariation);
-
-    const metaConversions = Math.round(metaClicks * 0.0437);
-    const metaViews = 0;
-    metrics.push({
-      date: dateStr,
-      platform: "meta",
-      spend: metaSpend,
-      revenue: Math.round(metaSpend * 3.44),
-      impressions: metaImpressions,
-      clicks: metaClicks,
-      conversions: metaConversions,
-      views: metaViews,
-      reach: Math.round(metaImpressions * 0.42),
-      frequency: 6.8,
-      cpm: metaImpressions > 0 ? (metaSpend / metaImpressions) * 1000 : 0,
-      vtr: 0,
-      cpv: 0,
-      viewability: 0,
-      thruPlays: Math.round(metaViews * 0.6),
-      engagementRate: 0.048,
-      vtc: 0,
-      cpa: metaConversions > 0 ? metaSpend / metaConversions : 0,
-    });
+    // Generate metrics for each platform using unified calculation logic
+    metrics.push(
+      createPlatformMetric(dateStr, PLATFORM_BASELINES.google, trendMultiplier, weekendMod, dayVariation, isWeekend),
+      createPlatformMetric(dateStr, PLATFORM_BASELINES.dv360, trendMultiplier, weekendMod, dayVariation, isWeekend),
+      createPlatformMetric(dateStr, PLATFORM_BASELINES.meta, trendMultiplier, weekendMod, dayVariation, isWeekend)
+    );
   }
 
   return metrics;
