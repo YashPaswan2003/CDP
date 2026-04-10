@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Alert(BaseModel):
@@ -13,4 +13,4 @@ class Alert(BaseModel):
 
 class AlertsResponse(BaseModel):
     """Response containing a list of alerts."""
-    alerts: list[Alert]
+    alerts: List[Alert]
