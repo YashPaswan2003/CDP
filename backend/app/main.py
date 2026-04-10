@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.connection import init_db, get_connection
 from app.database.seed import seed_database
-from app.routes import auth, upload, dashboard, chat, analytics, accounts
+from app.routes import auth, upload, dashboard, chat, analytics, accounts, alerts
 from app.routes.funnel_stages import router as funnel_stages_router
 
 # Configure logging
@@ -88,6 +88,7 @@ app.include_router(upload.router)
 app.include_router(funnel_stages_router)
 app.include_router(dashboard.router)
 app.include_router(chat.router)
+app.include_router(alerts.router, prefix="/api")
 app.include_router(analytics.router)
 
 # Health check endpoint
