@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { buildCampaignDeepLink } from "@/lib/analytics";
 
 export interface Recommendation {
   id: string;
@@ -32,6 +34,7 @@ export function RecommendationPanel({
   onDismiss,
   onAction
 }: RecommendationPanelProps) {
+  const router = useRouter();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   if (!recommendations || recommendations.length === 0) {
@@ -76,6 +79,12 @@ export function RecommendationPanel({
   const handleDismiss = (id: string) => {
     setDismissed(prev => new Set([...prev, id]));
     onDismiss?.(id);
+  };
+
+  const handleViewAction = (rec: Recommendation) => {
+    const deepLink = buildCampaignDeepLink(rec.platform, rec.campaign);
+    router.push(deepLink);
+    onAction?.(rec.id);
   };
 
   return (
@@ -153,7 +162,7 @@ export function RecommendationPanel({
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => onAction?.(rec.id)}
+                    onClick={() => handleViewAction(rec)}
                     className="px-3 py-1.5 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
                   >
                     View

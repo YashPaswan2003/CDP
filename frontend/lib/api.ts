@@ -445,6 +445,7 @@ export async function fetchAlerts(filters?: {
             message: 'ROAS dropped 40% vs last week on Google (Summer Sale)',
             campaign: 'Summer Sale',
             platform: 'google',
+            targetPage: '/dashboard/analytics/google-ads?campaign=Summer+Sale',
           },
           {
             id: 'alert_freq_demo',
@@ -452,6 +453,7 @@ export async function fetchAlerts(filters?: {
             message: 'Meta frequency >5x — audience fatigue risk',
             campaign: 'Retargeting 2026',
             platform: 'meta',
+            targetPage: '/dashboard/analytics/meta?campaign=Retargeting+2026',
           },
           {
             id: 'alert_budget_demo',
@@ -459,6 +461,7 @@ export async function fetchAlerts(filters?: {
             message: 'DV360 on track — 98% budget utilization',
             campaign: 'DV360 Q2',
             platform: 'dv360',
+            targetPage: '/dashboard/analytics/dv360?campaign=DV360+Q2',
           },
         ],
       };

@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { buildCampaignDeepLink } from "@/lib/analytics";
 
 export interface Alert {
   id: string;
@@ -9,6 +11,7 @@ export interface Alert {
   message: string;
   campaign?: string;
   platform?: string;
+  targetPage?: string; // e.g., '/dashboard/analytics/google-ads/campaigns'
 }
 
 interface AlertStripProps {
@@ -21,11 +24,12 @@ interface AlertStripProps {
  *
  * Displays 2-4 health alerts for a marketing account.
  * Color-coded by severity: red (error), amber (warning), green (success).
- * Each alert is dismissable via the [X] button.
+ * Each alert is dismissable via the [X] button and clickable to navigate to analytics pages.
  *
  * Displays nothing when alerts array is empty.
  */
 export function AlertStrip({ alerts, onDismiss }: AlertStripProps) {
+  const router = useRouter();
   if (!alerts || alerts.length === 0) {
     return null;
   }
@@ -59,13 +63,35 @@ export function AlertStrip({ alerts, onDismiss }: AlertStripProps) {
       {alerts.map((alert, idx) => {
         const styles = severityStyles[alert.severity];
 
+        const handleAlertClick = (e: React.MouseEvent) => {
+          // Only navigate if clicking on the message area, not the dismiss button
+          if ((e.target as HTMLElement).closest('button')) {
+            return;
+          }
+
+          if (alert.platform && alert.campaign) {
+            const deepLink = buildCampaignDeepLink(
+              alert.platform as 'google' | 'dv360' | 'meta',
+              alert.campaign,
+            );
+            router.push(deepLink);
+          } else if (alert.targetPage) {
+            router.push(alert.targetPage);
+          }
+        };
+
         return (
           <motion.div
             key={alert.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.1, duration: 0.3 }}
-            className={`flex items-center justify-between px-4 py-3 rounded-lg border ${styles.container}`}
+            onClick={handleAlertClick}
+            className={`flex items-center justify-between px-4 py-3 rounded-lg border ${styles.container} ${
+              (alert.platform && alert.campaign) || alert.targetPage
+                ? 'cursor-pointer hover:shadow-md transition-shadow'
+                : ''
+            }`}
           >
             <div className={`flex items-center gap-3 ${styles.text} text-sm`}>
               <span className="text-base">{styles.icon}</span>
