@@ -8,6 +8,7 @@ import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
 import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
+import { HealthDot } from "@/components/metrics/HealthDot";
 import { ChevronDown } from "lucide-react";
 
 interface PlatformMetrics {
@@ -23,10 +24,20 @@ interface PlatformMetrics {
   reach?: number;
 }
 
+interface MetricWithHealth {
+  value: string;
+  current: number;
+  previous: number;
+}
+
+interface FunnelMetrics {
+  [key: string]: MetricWithHealth;
+}
+
 interface FunnelSectionProps {
   title: string;
   stage: "tofu" | "mofu" | "bofu";
-  metrics: Record<string, number | string>;
+  metrics: FunnelMetrics;
   insight: string;
   platformCards: PlatformMetrics[];
 }
@@ -38,10 +49,35 @@ const BRAND_FALLBACKS = {
   accent: "#F59E0B",    // Amplitude amber
 };
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+/**
+ * Helper to create metric objects with health data
+ * Scenarios: -30%, -15%, +20% for realistic variety
+ */
+function createMetric(value: string, rawValue: number, healthVariation: number = -0.15): MetricWithHealth {
+  const previous = Math.max(0, rawValue / (1 + healthVariation));
+  return {
+    value,
+    current: rawValue,
+    previous,
+  };
+}
+
+interface MetricCardProps {
+  label: string;
+  value: string;
+  current?: number;
+  previous?: number;
+}
+
+function MetricCard({ label, value, current, previous }: MetricCardProps) {
   return (
     <div className="bg-white border border-gray-100 shadow-sm rounded-xl p-4 space-y-1 min-w-0">
-      <p className="text-xs text-gray-500 uppercase tracking-wide font-medium truncate">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium truncate flex-1">{label}</p>
+        {current !== undefined && previous !== undefined && (
+          <HealthDot current={current} previous={previous} size="sm" showTooltip={true} />
+        )}
+      </div>
       <p className="text-xl font-bold text-gray-900 truncate">{value}</p>
     </div>
   );
@@ -187,19 +223,37 @@ function FunnelSection({
 
       {/* Summary Metrics Grid */}
       <div className="grid grid-cols-4 gap-3">
-        {Object.entries(metrics).slice(0, 4).map(([key, value]) => (
-          <MetricCard key={key} label={key} value={String(value)} />
+        {Object.entries(metrics).slice(0, 4).map(([key, metric]) => (
+          <MetricCard
+            key={key}
+            label={key}
+            value={metric.value}
+            current={metric.current}
+            previous={metric.previous}
+          />
         ))}
       </div>
 
       {/* Additional Metrics Grid */}
       <div className="grid grid-cols-4 gap-3">
-        {Object.entries(metrics).slice(4, 8).map(([key, value]) => (
-          <MetricCard key={key} label={key} value={String(value)} />
+        {Object.entries(metrics).slice(4, 8).map(([key, metric]) => (
+          <MetricCard
+            key={key}
+            label={key}
+            value={metric.value}
+            current={metric.current}
+            previous={metric.previous}
+          />
         ))}
         {Object.entries(metrics).slice(8).length > 0 ? (
-          Object.entries(metrics).slice(8).map(([key, value]) => (
-            <MetricCard key={key} label={key} value={String(value)} />
+          Object.entries(metrics).slice(8).map(([key, metric]) => (
+            <MetricCard
+              key={key}
+              label={key}
+              value={metric.value}
+              current={metric.current}
+              previous={metric.previous}
+            />
           ))
         ) : (
           <>
@@ -361,51 +415,53 @@ export default function PortfolioPage() {
   const cpv = completeViews > 0 ? data.total_spend / completeViews : 0;
   const vtr = totalViews > 0 ? (completeViews / totalViews * 100) : 0;
 
-  const tofuMetrics = {
-    "Total Impressions": (data.total_impressions / 1000000).toFixed(1) + "M",
-    "Complete Views": (completeViews / 1000000).toFixed(1) + "M",
-    CPV: formatCurrency(cpv, "INR"),
-    "VTR": vtr.toFixed(2) + "%",
-    "Google Impr.": (platformMetrics.google.impressions / 1000000).toFixed(1) + "M",
-    "DV360 Reach": (totalDV360Reach / 1000000).toFixed(1) + "M",
-    "Meta Reach": (totalMetaReach / 1000000).toFixed(1) + "M",
-    "Avg Frequency": avgFrequency + "x",
+  // Create metric objects with health data (different scenarios for variety)
+  const tofuMetrics: FunnelMetrics = {
+    "Total Impressions": createMetric((data.total_impressions / 1000000).toFixed(1) + "M", data.total_impressions, -0.30), // 30% decline
+    "Complete Views": createMetric((completeViews / 1000000).toFixed(1) + "M", completeViews, -0.15), // 15% decline
+    CPV: createMetric(formatCurrency(cpv, "INR"), cpv, 0.20), // 20% growth
+    "VTR": createMetric(vtr.toFixed(2) + "%", vtr, -0.12), // 12% decline
+    "Google Impr.": createMetric((platformMetrics.google.impressions / 1000000).toFixed(1) + "M", platformMetrics.google.impressions, -0.25), // 25% decline
+    "DV360 Reach": createMetric((totalDV360Reach / 1000000).toFixed(1) + "M", totalDV360Reach, 0.10), // 10% growth
+    "Meta Reach": createMetric((totalMetaReach / 1000000).toFixed(1) + "M", totalMetaReach, -0.08), // 8% decline (on track)
+    "Avg Frequency": createMetric(avgFrequency + "x", parseFloat(avgFrequency), 0.05), // 5% growth
   };
 
   // MOFU metrics (6 chips)
   const totalClicks = data.total_clicks;
   const totalImpressions = data.total_impressions;
   const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0";
+  const avgCPC = data.total_spend / (totalClicks || 1);
   const googleMetrics = data.byPlatform?.google || {};
   const dv360Metrics = data.byPlatform?.dv360 || {};
   const metaMetrics = data.byPlatform?.meta || {};
-  const googleCTR = googleMetrics.impressions > 0 ? ((googleMetrics.clicks / googleMetrics.impressions) * 100).toFixed(2) : "0";
-  const dv360CTR = dv360Metrics.impressions > 0 ? ((dv360Metrics.clicks / dv360Metrics.impressions) * 100).toFixed(2) : "0";
-  const metaCTR = metaMetrics.impressions > 0 ? ((metaMetrics.clicks / metaMetrics.impressions) * 100).toFixed(2) : "0";
+  const googleCTRValue = googleMetrics.impressions > 0 ? ((googleMetrics.clicks / googleMetrics.impressions) * 100) : 0;
+  const dv360CTRValue = dv360Metrics.impressions > 0 ? ((dv360Metrics.clicks / dv360Metrics.impressions) * 100) : 0;
+  const metaCTRValue = metaMetrics.impressions > 0 ? ((metaMetrics.clicks / metaMetrics.impressions) * 100) : 0;
 
-  const mofuMetrics = {
-    "Total Clicks": (totalClicks / 1000).toFixed(0) + "K",
-    CTR: ctr + "%",
-    "Avg CPC": formatCurrency(data.total_spend / (totalClicks || 1), "INR"),
-    "Google CTR": googleCTR + "%",
-    "DV360 CTR": dv360CTR + "%",
-    "Meta CTR": metaCTR + "%",
+  const mofuMetrics: FunnelMetrics = {
+    "Total Clicks": createMetric((totalClicks / 1000).toFixed(0) + "K", totalClicks, -0.18), // 18% decline
+    CTR: createMetric(ctr + "%", parseFloat(ctr), -0.22), // 22% decline (red)
+    "Avg CPC": createMetric(formatCurrency(avgCPC, "INR"), avgCPC, 0.15), // 15% growth
+    "Google CTR": createMetric(googleCTRValue.toFixed(2) + "%", googleCTRValue, -0.08), // 8% decline (on track)
+    "DV360 CTR": createMetric(dv360CTRValue.toFixed(2) + "%", dv360CTRValue, -0.11), // 11% decline (yellow)
+    "Meta CTR": createMetric(metaCTRValue.toFixed(2) + "%", metaCTRValue, 0.12), // 12% growth
   };
 
   // BOFU metrics (6 chips)
   const totalConversions = data.total_conversions;
   const totalRevenue = data.total_revenue;
-  const cvr = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(2) : "0";
-  const roas = data.total_spend > 0 ? (totalRevenue / data.total_spend).toFixed(2) : "0";
-  const cpa = totalConversions > 0 ? formatCurrency(data.total_spend / totalConversions, "INR") : "N/A";
+  const cvrValue = totalClicks > 0 ? ((totalConversions / totalClicks) * 100) : 0;
+  const roasValue = data.total_spend > 0 ? (totalRevenue / data.total_spend) : 0;
+  const cpaValue = totalConversions > 0 ? (data.total_spend / totalConversions) : 0;
 
-  const bofuMetrics = {
-    Conversions: (totalConversions / 1000).toFixed(1) + "K",
-    Revenue: formatCurrency(totalRevenue, "INR"),
-    ROAS: roas + "x",
-    CVR: cvr + "%",
-    CPA: cpa,
-    "Best Platform": "Google Ads",
+  const bofuMetrics: FunnelMetrics = {
+    Conversions: createMetric((totalConversions / 1000).toFixed(1) + "K", totalConversions, 0.25), // 25% growth (green)
+    Revenue: createMetric(formatCurrency(totalRevenue, "INR"), totalRevenue, 0.30), // 30% growth (green)
+    ROAS: createMetric(roasValue.toFixed(2) + "x", roasValue, -0.19), // 19% decline (yellow)
+    CVR: createMetric(cvrValue.toFixed(2) + "%", cvrValue, -0.09), // 9% decline (on track)
+    CPA: createMetric(formatCurrency(cpaValue, "INR"), cpaValue, -0.14), // 14% decline
+    "Best Platform": createMetric("Google Ads", 1, 0), // stable
   };
 
   // Generate insights
