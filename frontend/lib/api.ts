@@ -420,6 +420,52 @@ export const dashboardAPI = {
   },
 };
 
+// ========== ALERTS ==========
+export async function fetchAlerts(filters?: {
+  account_id?: string;
+  date_from?: string;
+  date_to?: string;
+}): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (filters?.account_id) params.append('account_id', filters.account_id);
+  if (filters?.date_from) params.append('date_from', filters.date_from);
+  if (filters?.date_to) params.append('date_to', filters.date_to);
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  return fetchWithFallback(
+    `/api/alerts${query}`,
+    () => {
+      // Mock alerts for demo
+      return {
+        alerts: [
+          {
+            id: 'alert_roas_demo',
+            severity: 'error',
+            message: 'ROAS dropped 40% vs last week on Google (Summer Sale)',
+            campaign: 'Summer Sale',
+            platform: 'google',
+          },
+          {
+            id: 'alert_freq_demo',
+            severity: 'warning',
+            message: 'Meta frequency >5x — audience fatigue risk',
+            campaign: 'Retargeting 2026',
+            platform: 'meta',
+          },
+          {
+            id: 'alert_budget_demo',
+            severity: 'success',
+            message: 'DV360 on track — 98% budget utilization',
+            campaign: 'DV360 Q2',
+            platform: 'dv360',
+          },
+        ],
+      };
+    },
+  ).then((res: any) => res.alerts || []);
+}
+
 // ========== STUB APIS FOR PHASE 0 ==========
 // These are stubs to satisfy imports in auth, chat, upload pages during Phase 0.
 // Phase 1 will replace these with real backend calls.

@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { dashboardAPI, fetchDailyMetrics } from "@/lib/api";
+import { dashboardAPI, fetchDailyMetrics, fetchAlerts } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
+import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
 import { ChevronDown } from "lucide-react";
 
 interface PlatformMetrics {
@@ -229,6 +230,7 @@ export default function PortfolioPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   // Month filter state
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
@@ -253,6 +255,8 @@ export default function PortfolioPage() {
         setData(response.data);
         const metrics = await fetchDailyMetrics({ account_id: selectedAccount?.id });
         setDailyMetrics(metrics);
+        const accountAlerts = await fetchAlerts({ account_id: selectedAccount?.id });
+        setAlerts(accountAlerts);
       } catch (error) {
         console.error("Error fetching dashboard:", error);
       } finally {
@@ -434,8 +438,16 @@ export default function PortfolioPage() {
     return inMonth && inPlatform;
   });
 
+  // Handle alert dismissal
+  const handleDismissAlert = (alertId: string) => {
+    setAlerts(alerts.filter(a => a.id !== alertId));
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+      {/* Alerts Strip */}
+      <AlertStrip alerts={alerts} onDismiss={handleDismissAlert} />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
