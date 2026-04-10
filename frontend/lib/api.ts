@@ -73,7 +73,7 @@ export async function fetchCampaigns(filters?: {
       if (filters?.platform) {
         campaigns = campaigns.filter((c) => c.platform === filters.platform);
       }
-      return campaigns;
+      return { campaigns };
     },
   ).then((res: any) => res.campaigns || []);
 }
@@ -96,7 +96,7 @@ export async function fetchAdGroups(filters?: {
       if (filters?.campaign_id) {
         adGroups = adGroups.filter((ag) => ag.campaignId === filters.campaign_id);
       }
-      return adGroups;
+      return { ad_groups: adGroups };
     },
   ).then((res: any) => res.ad_groups || []);
 }
@@ -119,7 +119,7 @@ export async function fetchAdSets(filters?: {
       if (filters?.campaign_id) {
         adSets = adSets.filter((as) => as.campaignId === filters.campaign_id);
       }
-      return adSets;
+      return { ad_sets: adSets };
     },
   ).then((res: any) => res.ad_sets || []);
 }
@@ -139,7 +139,7 @@ export async function fetchInsertionOrders(filters?: {
     `/api/analytics/insertion-orders${query}`,
     () => {
       let ios = mockData.getInsertionOrders();
-      return ios;
+      return { insertion_orders: ios };
     },
   ).then((res: any) => res.insertion_orders || []);
 }
@@ -165,7 +165,7 @@ export async function fetchLineItems(filters?: {
           (li) => li.insertionOrderId === filters.insertion_order_id,
         );
       }
-      return lineItems;
+      return { line_items: lineItems };
     },
   ).then((res: any) => res.line_items || []);
 }
@@ -193,7 +193,7 @@ export async function fetchGeoData(filters?: {
       if (filters?.state) {
         geo = geo.filter((g) => g.state === filters.state);
       }
-      return geo;
+      return { geo };
     },
   ).then((res: any) => res.geo || []);
 }
@@ -221,7 +221,7 @@ export async function fetchDemographics(filters?: {
       if (filters?.dimension) {
         demos = demos.filter((d) => d.dimension === filters.dimension);
       }
-      return demos;
+      return { demographics: demos };
     },
   ).then((res: any) => res.demographics || []);
 }
@@ -244,7 +244,7 @@ export async function fetchPlacements(filters?: {
       if (filters?.platform) {
         placements = placements.filter((p) => p.placementType === filters.platform);
       }
-      return placements;
+      return { placements };
     },
   ).then((res: any) => res.placements || []);
 }
@@ -269,7 +269,7 @@ export async function fetchCreatives(filters?: {
       if (filters?.platform) {
         creatives = creatives.filter((c) => c.platform === filters.platform);
       }
-      return creatives;
+      return { creatives };
     },
   ).then((res: any) => res.creatives || []);
 }
@@ -285,7 +285,7 @@ export async function fetchSearchTerms(
 
   return fetchWithFallback(
     `/api/analytics/search-terms${query}`,
-    () => mockData.getSearchTerms(),
+    () => ({ search_terms: mockData.getSearchTerms() }),
   ).then((res: any) => res.search_terms || []);
 }
 
@@ -298,7 +298,7 @@ export async function fetchPMaxChannels(account_id?: string): Promise<any[]> {
 
   return fetchWithFallback(
     `/api/analytics/pmax-channels${query}`,
-    () => mockData.getPMaxChannels(),
+    () => ({ pmax_channels: mockData.getPMaxChannels() }),
   ).then((res: any) => res.pmax_channels || []);
 }
 
@@ -322,7 +322,7 @@ export async function fetchDailyMetrics(filters?: {
       if (filters?.platform) {
         metrics = metrics.filter((m) => m.platform === filters.platform);
       }
-      return metrics;
+      return { daily_metrics: metrics };
     },
   ).then((res: any) => res.daily_metrics || []);
 }
@@ -338,7 +338,7 @@ export async function fetchFunnel(
 
   return fetchWithFallback(
     `/api/analytics/funnel?${params.toString()}`,
-    () => mockData.getFunnelData(platform, clientType),
+    () => ({ funnel: mockData.getFunnelData(platform, clientType) }),
   ).then((res: any) => res.funnel || []);
 }
 
