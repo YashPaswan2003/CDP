@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { getAuthToken, removeAuthToken } from "@/lib/utils";
 import { AccountProvider, useAccount } from "@/lib/accountContext";
+import { FloatingChat } from "@/components/ai/FloatingChat";
 
 function SidebarContent({
   children,
@@ -106,6 +107,15 @@ function SidebarContent({
           --client-accent: ${selectedAccount?.brandColors?.accent ?? '#F59E0B'};
         }
       `}</style>
+
+      {/* Floating Chat Widget */}
+      {selectedAccount && (
+        <FloatingChat
+          accountId={selectedAccount.id}
+          currentPage={pathname}
+        />
+      )}
+
       {/* Sidebar */}
       <div
         className={`${

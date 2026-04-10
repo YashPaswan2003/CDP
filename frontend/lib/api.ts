@@ -479,9 +479,44 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  sendMessage: async (_clientId: string, _messages: any[]) => ({
-    data: { message: "Mock response from Claude" },
-  }),
+  sendMessage: async (clientId: string, messages: any[]) => {
+    return fetchWithFallback(
+      `/api/chat`,
+      () => ({
+        data: { message: "Mock response from Claude about your campaigns" },
+      }),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_id: clientId,
+          messages: messages,
+        }),
+      },
+    );
+  },
+  sendMessageWithContext: async (
+    message: string,
+    context: {
+      account_id: string;
+      page: string;
+      date_from?: string;
+      date_to?: string;
+    },
+  ) => {
+    return fetchWithFallback(
+      `/api/chat`,
+      () => ({
+        response: "Mock response from Claude about your campaigns",
+      }),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          message: message,
+          context: context,
+        }),
+      },
+    );
+  },
 };
 
 export const uploadAPI = {
