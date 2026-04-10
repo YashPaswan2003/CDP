@@ -332,6 +332,9 @@ export default function PortfolioPage() {
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
+  // Trend days selector (7/30/90)
+  const [trendDays, setTrendDays] = useState<7 | 30 | 90>(30);
+
   // Performance trend controls
   const [trendStage, setTrendStage] = useState<"all" | "tofu" | "mofu" | "bofu">("all");
   const [trendPlatform, setTrendPlatform] = useState<"all" | "google" | "dv360" | "meta">("all");
@@ -537,11 +540,18 @@ export default function PortfolioPage() {
     ? `${topPlatformByRoas[1].name} delivering ${topPlatformByRoas[1].spend > 0 ? (topPlatformByRoas[1].revenue / topPlatformByRoas[1].spend).toFixed(2) : "—"}x ROAS`
     : "Optimizing conversions";
 
-  // Filter daily metrics by month and platform
+  // Compute trend date range based on trendDays
+  const today = new Date();
+  const dateFromTime = new Date(today);
+  dateFromTime.setDate(dateFromTime.getDate() - trendDays);
+  const trendDateFrom = dateFromTime.toISOString().split("T")[0]; // YYYY-MM-DD
+  const trendDateTo = today.toISOString().split("T")[0]; // YYYY-MM-DD
+
+  // Filter daily metrics by trend days and platform
   const filteredDailyMetrics = dailyMetrics.filter((m: any) => {
-    const inMonth = m.date >= monthFrom && m.date <= monthTo;
+    const inRange = m.date >= trendDateFrom && m.date <= trendDateTo;
     const inPlatform = trendPlatform === "all" || m.platform === trendPlatform;
-    return inMonth && inPlatform;
+    return inRange && inPlatform;
   });
 
   // Handle alert dismissal
@@ -685,9 +695,28 @@ export default function PortfolioPage() {
         viewport={{ once: true }}
         className="space-y-4"
       >
-        <div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Performance Trend</h3>
-          <p className="text-sm text-gray-500">Month: {monthLabel}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Performance Trend</h3>
+          </div>
+          {/* Trend Days Selector */}
+          <motion.div className="flex gap-2">
+            {([7, 30, 90] as const).map((days) => (
+              <motion.button
+                key={days}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setTrendDays(days)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  trendDays === days
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                }`}
+              >
+                {days}D
+              </motion.button>
+            ))}
+          </motion.div>
         </div>
 
         {/* Stage Tabs */}
