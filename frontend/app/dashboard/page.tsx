@@ -12,6 +12,7 @@ import { RecommendationPanel, type Recommendation } from "@/components/ai/Recomm
 import { getMockRecommendations } from "@/lib/mockData";
 import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
 import { ChevronDown } from "lucide-react";
+import { buildCampaignDeepLink } from "@/lib/analytics";
 
 interface PlatformMetrics {
   platform: "google" | "dv360" | "meta";
@@ -42,6 +43,9 @@ interface FunnelSectionProps {
   metrics: FunnelMetrics;
   insight: string;
   platformCards: PlatformMetrics[];
+  selectedAccount?: any;
+  monthFrom: string;
+  monthTo: string;
 }
 
 // Brand color fallbacks - these will be overridden by CSS variables in layout.tsx
@@ -86,10 +90,16 @@ function MetricCard({ label, value, current, previous }: MetricCardProps) {
   );
 }
 
-function PlatformSubCard({ platform, metrics, accentColor }: {
+function PlatformSubCard({
+  platform,
+  metrics,
+  accentColor,
+  analyzeUrl,
+}: {
   platform: string;
   metrics: { label: string; value: string }[];
   accentColor: string;
+  analyzeUrl: string;
 }) {
   return (
     <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 flex-1">
@@ -103,6 +113,16 @@ function PlatformSubCard({ platform, metrics, accentColor }: {
           <span className="text-gray-900 text-sm font-medium">{m.value}</span>
         </div>
       ))}
+
+      {/* Analyze → Link */}
+      <motion.a
+        href={analyzeUrl}
+        whileHover={{ x: 2 }}
+        className="inline-block mt-3 text-sm font-medium transition-colors hover:opacity-80"
+        style={{ color: accentColor }}
+      >
+        Analyze →
+      </motion.a>
     </div>
   );
 }
@@ -181,6 +201,9 @@ function FunnelSection({
   metrics,
   insight,
   platformCards,
+  selectedAccount,
+  monthFrom,
+  monthTo,
 }: FunnelSectionProps) {
   // Get accent color based on stage
   const accentColor = stage === "tofu" ? "#5C6BC0" : stage === "mofu" ? "#7986CB" : "#F59E0B";
@@ -207,6 +230,19 @@ function FunnelSection({
         { label: "Revenue", value: formatCurrency(metrics.revenue, "INR") }
       ];
     }
+  };
+
+  // Build analyze URLs for each platform
+  const getAnalyzeUrl = (platformId: "google" | "dv360" | "meta") => {
+    return buildCampaignDeepLink(
+      platformId,
+      "All Campaigns",
+      {
+        accountId: selectedAccount?.id,
+        dateFrom: monthFrom,
+        dateTo: monthTo,
+      }
+    );
   };
 
   return (
@@ -276,6 +312,7 @@ function FunnelSection({
             platform={platform.name}
             metrics={getPlatformMetrics(platform.platform)}
             accentColor={accentColor}
+            analyzeUrl={getAnalyzeUrl(platform.platform as "google" | "dv360" | "meta")}
           />
         ))}
       </div>
@@ -612,6 +649,9 @@ export default function PortfolioPage() {
         metrics={tofuMetrics}
         insight={tofuInsight}
         platformCards={Object.values(platformMetrics)}
+        selectedAccount={selectedAccount}
+        monthFrom={monthFrom}
+        monthTo={monthTo}
       />
 
       {/* MOFU Section */}
@@ -621,6 +661,9 @@ export default function PortfolioPage() {
         metrics={mofuMetrics}
         insight={mofuInsight}
         platformCards={Object.values(platformMetrics)}
+        selectedAccount={selectedAccount}
+        monthFrom={monthFrom}
+        monthTo={monthTo}
       />
 
       {/* BOFU Section */}
@@ -630,6 +673,9 @@ export default function PortfolioPage() {
         metrics={bofuMetrics}
         insight={bofuInsight}
         platformCards={Object.values(platformMetrics)}
+        selectedAccount={selectedAccount}
+        monthFrom={monthFrom}
+        monthTo={monthTo}
       />
 
       {/* Performance Trend */}
