@@ -8,6 +8,8 @@ import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
 import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
+import { RecommendationPanel, type Recommendation } from "@/components/ai/RecommendationPanel";
+import { getMockRecommendations } from "@/lib/mockData";
 import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
 import { ChevronDown } from "lucide-react";
 
@@ -286,6 +288,7 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   // Month filter state
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
@@ -312,6 +315,9 @@ export default function PortfolioPage() {
         setDailyMetrics(metrics);
         const accountAlerts = await fetchAlerts({ account_id: selectedAccount?.id });
         setAlerts(accountAlerts);
+        // Load mock recommendations
+        const mockRecs = getMockRecommendations();
+        setRecommendations(mockRecs);
       } catch (error) {
         console.error("Error fetching dashboard:", error);
       } finally {
@@ -498,6 +504,21 @@ export default function PortfolioPage() {
   // Handle alert dismissal
   const handleDismissAlert = (alertId: string) => {
     setAlerts(alerts.filter(a => a.id !== alertId));
+  };
+
+  // Handle recommendation dismissal
+  const handleDismissRecommendation = (recId: string) => {
+    setRecommendations(recommendations.filter(r => r.id !== recId));
+  };
+
+  // Handle recommendation action (View button)
+  const handleRecommendationAction = (recId: string) => {
+    const rec = recommendations.find(r => r.id === recId);
+    if (rec) {
+      // Deep link to platform analytics page
+      // TODO: Implement in Task 6
+      console.log('Navigate to platform:', rec.platform, 'campaign:', rec.campaign);
+    }
   };
 
   return (
@@ -701,6 +722,13 @@ export default function PortfolioPage() {
           )}
         </ChartContainer>
       </motion.div>
+
+      {/* AI Recommendations Panel */}
+      <RecommendationPanel
+        recommendations={recommendations}
+        onDismiss={handleDismissRecommendation}
+        onAction={handleRecommendationAction}
+      />
     </motion.div>
   );
 }

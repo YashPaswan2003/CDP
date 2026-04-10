@@ -2423,3 +2423,62 @@ export function calculateMetrics(
     vtr: impressions && views ? parseFloat(((views / impressions) * 100).toFixed(2)) : 0,
   };
 }
+
+// AI Recommendations Interface
+export interface Recommendation {
+  id: string;
+  platform: 'google' | 'meta' | 'dv360';
+  campaign: string;
+  issue: string;          // e.g., "ROAS 0.8x for 3 days"
+  action: string;          // e.g., "Reduce budget by 30% or pause"
+  priority: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Generate mock AI recommendations for campaign optimization
+ * Returns realistic scenarios: ROAS decline, frequency warning, budget limit, etc.
+ */
+export function getMockRecommendations(): Recommendation[] {
+  return [
+    {
+      id: 'rec-001',
+      platform: 'google',
+      campaign: 'Summer Sale',
+      issue: 'ROAS 0.8x for 3 days',
+      action: 'Reduce budget by 30% or pause campaign',
+      priority: 'high',
+    },
+    {
+      id: 'rec-002',
+      platform: 'google',
+      campaign: 'Brand Search',
+      issue: 'Limited by budget',
+      action: 'Increase daily budget by ₹5,000 to capture more high-intent traffic',
+      priority: 'medium',
+    },
+    {
+      id: 'rec-003',
+      platform: 'meta',
+      campaign: 'Meta Retargeting',
+      issue: 'Frequency 5.8x (audience fatigue)',
+      action: 'Refresh creatives or expand audience to reduce ad fatigue',
+      priority: 'high',
+    },
+    {
+      id: 'rec-004',
+      platform: 'dv360',
+      campaign: 'DV360 Premium Sites',
+      issue: 'CPC ₹2.46 (up 24% WoW)',
+      action: 'Review placement quality and consider pausing underperforming sites',
+      priority: 'medium',
+    },
+    {
+      id: 'rec-005',
+      platform: 'meta',
+      campaign: 'Meta - SIP Investment',
+      issue: 'High ROAS 3.32x (opportunity)',
+      action: 'Increase budget by 20-30% to scale winning creative',
+      priority: 'low',
+    },
+  ];
+}
