@@ -13,13 +13,19 @@ from app.models.alerts import Alert, AlertsResponse
 from app.database.connection import get_connection
 from app.routes.auth import get_current_user
 import logging
+import sqlite3
 from datetime import datetime, timedelta
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
-def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -> list[Alert]:
+def detect_alerts(
+    account_id: str,
+    conn: sqlite3.Connection,
+    date_from: str | None = None,  # TODO: Not yet used (for Phase 2)
+    date_to: str | None = None     # TODO: Not yet used (for Phase 2)
+) -> list[Alert]:
     """
     Detect anomalies and health issues for an account.
 
@@ -30,9 +36,11 @@ def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -
     4. Campaign paused unexpectedly → error
 
     Returns up to 4 alerts, sorted by severity (error > warning > success).
+
+    Note: date_from and date_to parameters are reserved for Phase 2 when
+    historical period-over-period comparison data becomes available.
     """
     alerts = []
-    conn = get_connection()
 
     try:
         # Get campaigns for this account
@@ -64,7 +72,8 @@ def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -
             })
 
         # Rule 1: ROAS drop > 40%
-        # MVP: Mock rule - check if any campaign's ROAS is significantly below 2.0x
+        # MVP RULE 1: ROAS below 1.2x (proxy for ~40% drop vs previous period)
+        # TODO: Implement actual period-over-period comparison once historical data available
         for campaign in campaigns:
             if campaign['roas'] is not None and campaign['roas'] < 1.2:
                 alerts.append(Alert(
@@ -77,7 +86,8 @@ def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -
                 break  # Only one ROAS alert per account
 
         # Rule 2: Meta frequency > 5.0
-        # Check Meta campaigns for high frequency
+        # MVP RULE 2: Frequency threshold of 5.0x based on industry best practices
+        # TODO: Calibrate threshold based on historical performance data
         for campaign in campaigns:
             if campaign['platform'].lower() == 'meta' and campaign['frequency'] is not None and campaign['frequency'] > 5.0:
                 alerts.append(Alert(
@@ -90,7 +100,8 @@ def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -
                 break  # Only one frequency alert
 
         # Rule 3: Budget utilization 95%+
-        # Check any campaign with 95%+ budget spent
+        # MVP RULE 3: High budget utilization (95%+) indicates campaign is on track
+        # TODO: Add predictive alert for campaigns approaching 100% utilization
         for campaign in campaigns:
             if campaign['budget'] and campaign['spent']:
                 utilization = (campaign['spent'] / campaign['budget']) * 100
@@ -120,8 +131,6 @@ def detect_alerts(account_id: str, date_from: str = None, date_to: str = None) -
     except Exception as e:
         logger.error(f"Error detecting alerts for account {account_id}: {str(e)}")
         return []
-    finally:
-        conn.close()
 
     # Sort by severity: error > warning > success
     severity_order = {'error': 0, 'warning': 1, 'success': 2}
@@ -160,22 +169,39 @@ def get_alerts(
     except HTTPException:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+    # SECURITY: Validate user has access to this account
+    conn = get_connection()
+    try:
+        if user["role"] != "admin":
+            # Non-admin users can only access their own accounts
+            access = conn.execute(
+                "SELECT 1 FROM user_accounts WHERE user_id = ? AND account_id = ?",
+                [user["id"], account_id]
+            ).fetchone()
+
+            if not access:
+                raise HTTPException(status_code=403, detail="Access denied to this account")
+    finally:
+        conn.close()
+
     # Validate account_id
     if not account_id or not isinstance(account_id, str):
         raise HTTPException(status_code=400, detail="Invalid account_id")
 
-    # Check account exists
+    # Check account exists and get connection for alerts detection
     conn = get_connection()
-    account_result = conn.execute(
-        "SELECT id FROM accounts WHERE id = ?",
-        [account_id]
-    ).fetchall()
-    conn.close()
+    try:
+        account_result = conn.execute(
+            "SELECT id FROM accounts WHERE id = ?",
+            [account_id]
+        ).fetchall()
 
-    if not account_result:
-        raise HTTPException(status_code=400, detail="Account not found")
+        if not account_result:
+            raise HTTPException(status_code=400, detail="Account not found")
 
-    # Detect and return alerts
-    alerts = detect_alerts(account_id, date_from, date_to)
+        # Detect and return alerts
+        alerts = detect_alerts(account_id, conn, date_from, date_to)
+    finally:
+        conn.close()
 
     return AlertsResponse(alerts=alerts)
