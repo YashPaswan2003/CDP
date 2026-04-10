@@ -193,12 +193,13 @@ function FunnelSection({
     if (stage === "tofu") {
       return [
         { label: "Impressions", value: (metrics.impressions / 1000000).toFixed(1) + "M" },
-        { label: "Reach", value: (metrics.reach ? (metrics.reach / 1000000).toFixed(1) : "N/A") + "M" }
+        { label: "Reach", value: metrics.reach ? (metrics.reach / 1000000).toFixed(1) + "M" : "—" }
       ];
     } else if (stage === "mofu") {
+      const ctrValue = metrics.impressions > 0 ? ((metrics.clicks / metrics.impressions) * 100).toFixed(2) : "0";
       return [
         { label: "Clicks", value: (metrics.clicks / 1000).toFixed(0) + "K" },
-        { label: "CTR", value: ((metrics.clicks / metrics.impressions) * 100).toFixed(2) + "%" }
+        { label: "CTR", value: ctrValue + "%" }
       ];
     } else {
       return [
@@ -420,7 +421,7 @@ export default function PortfolioPage() {
   // TOFU metrics (8 chips)
   const completeViews = Math.round(totalViews * 0.35); // synthetic complete view count
   const cpv = completeViews > 0 ? data.total_spend / completeViews : 0;
-  const vtr = totalViews > 0 ? (completeViews / totalViews * 100) : 0;
+  const vtr = totalViews > 0 ? ((completeViews / totalViews) * 100) : 0;
 
   // Create metric objects with health data (different scenarios for variety)
   const tofuMetrics: FunnelMetrics = {
@@ -438,21 +439,21 @@ export default function PortfolioPage() {
   const totalClicks = data.total_clicks;
   const totalImpressions = data.total_impressions;
   const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0";
-  const avgCPC = data.total_spend / (totalClicks || 1);
+  const avgCPC = totalClicks > 0 ? data.total_spend / totalClicks : 0;
   const googleMetrics = data.byPlatform?.google || {};
   const dv360Metrics = data.byPlatform?.dv360 || {};
   const metaMetrics = data.byPlatform?.meta || {};
-  const googleCTRValue = googleMetrics.impressions > 0 ? ((googleMetrics.clicks / googleMetrics.impressions) * 100) : 0;
-  const dv360CTRValue = dv360Metrics.impressions > 0 ? ((dv360Metrics.clicks / dv360Metrics.impressions) * 100) : 0;
-  const metaCTRValue = metaMetrics.impressions > 0 ? ((metaMetrics.clicks / metaMetrics.impressions) * 100) : 0;
+  const googleCTRValue = googleMetrics.impressions > 0 ? (googleMetrics.clicks / googleMetrics.impressions) * 100 : 0;
+  const dv360CTRValue = dv360Metrics.impressions > 0 ? (dv360Metrics.clicks / dv360Metrics.impressions) * 100 : 0;
+  const metaCTRValue = metaMetrics.impressions > 0 ? (metaMetrics.clicks / metaMetrics.impressions) * 100 : 0;
 
   const mofuMetrics: FunnelMetrics = {
     "Total Clicks": createMetric((totalClicks / 1000).toFixed(0) + "K", totalClicks, -0.18), // 18% decline
     CTR: createMetric(ctr + "%", parseFloat(ctr), -0.22), // 22% decline (red)
     "Avg CPC": createMetric(formatCurrency(avgCPC, "INR"), avgCPC, 0.15), // 15% growth
-    "Google CTR": createMetric(googleCTRValue.toFixed(2) + "%", googleCTRValue, -0.08), // 8% decline (on track)
-    "DV360 CTR": createMetric(dv360CTRValue.toFixed(2) + "%", dv360CTRValue, -0.11), // 11% decline (yellow)
-    "Meta CTR": createMetric(metaCTRValue.toFixed(2) + "%", metaCTRValue, 0.12), // 12% growth
+    "Google CTR": createMetric(isFinite(googleCTRValue) ? googleCTRValue.toFixed(2) + "%" : "—", googleCTRValue, -0.08), // 8% decline (on track)
+    "DV360 CTR": createMetric(isFinite(dv360CTRValue) ? dv360CTRValue.toFixed(2) + "%" : "—", dv360CTRValue, -0.11), // 11% decline (yellow)
+    "Meta CTR": createMetric(isFinite(metaCTRValue) ? metaCTRValue.toFixed(2) + "%" : "—", metaCTRValue, 0.12), // 12% growth
   };
 
   // BOFU metrics (6 chips)
@@ -462,12 +463,17 @@ export default function PortfolioPage() {
   const roasValue = data.total_spend > 0 ? (totalRevenue / data.total_spend) : 0;
   const cpaValue = totalConversions > 0 ? (data.total_spend / totalConversions) : 0;
 
+  // Guard values for formatting
+  const cvrDisplay = isFinite(cvrValue) ? cvrValue.toFixed(2) : "0";
+  const roasDisplay = isFinite(roasValue) ? roasValue.toFixed(2) : "0";
+  const cpaDisplay = isFinite(cpaValue) ? formatCurrency(cpaValue, "INR") : "—";
+
   const bofuMetrics: FunnelMetrics = {
     Conversions: createMetric((totalConversions / 1000).toFixed(1) + "K", totalConversions, 0.25), // 25% growth (green)
     Revenue: createMetric(formatCurrency(totalRevenue, "INR"), totalRevenue, 0.30), // 30% growth (green)
-    ROAS: createMetric(roasValue.toFixed(2) + "x", roasValue, -0.19), // 19% decline (yellow)
-    CVR: createMetric(cvrValue.toFixed(2) + "%", cvrValue, -0.09), // 9% decline (on track)
-    CPA: createMetric(formatCurrency(cpaValue, "INR"), cpaValue, -0.14), // 14% decline
+    ROAS: createMetric(roasDisplay + "x", roasValue, -0.19), // 19% decline (yellow)
+    CVR: createMetric(cvrDisplay + "%", cvrValue, -0.09), // 9% decline (on track)
+    CPA: createMetric(cpaDisplay, cpaValue, -0.14), // 14% decline
     "Best Platform": createMetric("Google Ads", 1, 0), // stable
   };
 
@@ -486,12 +492,12 @@ export default function PortfolioPage() {
       )}% of impressions`
     : "Analyzing audience reach";
 
-  const mofuInsight = data.total_clicks > 0
-    ? `Overall CTR at ${((totalClicks / totalImpressions) * 100).toFixed(2)}% across ${Object.values(platformMetrics).filter((p) => p.isActive).length} platforms`
+  const mofuInsight = totalImpressions > 0
+    ? `Overall CTR at ${totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0"}% across ${Object.values(platformMetrics).filter((p) => p.isActive).length} platforms`
     : "Tracking engagement";
 
   const bofuInsight = topPlatformByRoas
-    ? `${topPlatformByRoas[1].name} delivering ${(topPlatformByRoas[1].revenue / topPlatformByRoas[1].spend).toFixed(2)}x ROAS`
+    ? `${topPlatformByRoas[1].name} delivering ${topPlatformByRoas[1].spend > 0 ? (topPlatformByRoas[1].revenue / topPlatformByRoas[1].spend).toFixed(2) : "—"}x ROAS`
     : "Optimizing conversions";
 
   // Filter daily metrics by month and platform
