@@ -22,8 +22,10 @@ export const HEALTH_THRESHOLDS = {
 /**
  * Calculates health status based on percentage change
  * Red: >20% decline, Yellow: 10-20% decline, Green: on-track (within +/- 10%)
+ * Gray: no data available (both current and previous are 0)
  */
-function getHealthStatus(current: number, previous: number): "error" | "warning" | "success" {
+function getHealthStatus(current: number, previous: number): "error" | "warning" | "success" | "no-data" {
+  if (current === 0 && previous === 0) return "no-data";
   if (previous === 0 || !previous) return "success";
   const change = (current - previous) / previous;
   if (change < HEALTH_THRESHOLDS.ERROR_THRESHOLD) return "error";
@@ -54,12 +56,14 @@ export function HealthDot({ current, previous, size = "md", showTooltip = true }
     error: "bg-accent-error",
     warning: "bg-accent-warning",
     success: "bg-accent-success",
+    "no-data": "bg-gray-300",
   };
 
   const tooltipMap = {
     error: `Change: ${changePercent} (Declining)`,
     warning: `Change: ${changePercent} (Warning)`,
     success: `Change: ${changePercent} (On Track)`,
+    "no-data": "No data available",
   };
 
   return (
@@ -67,7 +71,11 @@ export function HealthDot({ current, previous, size = "md", showTooltip = true }
       className={cn(sizeMap[size], "rounded-full", colorMap[status], "flex-shrink-0")}
       title={showTooltip ? tooltipMap[status] : undefined}
       role="status"
-      aria-label={`Health status: ${status}. ${tooltipMap[status]}`}
+      aria-label={
+        status === "no-data"
+          ? "Health status: no data"
+          : `Health status: ${status}. ${tooltipMap[status]}`
+      }
     />
   );
 }
