@@ -124,7 +124,7 @@ function SidebarContent({
         </div>
 
         {/* Account Switcher */}
-        {sidebarOpen && (
+        {sidebarOpen && currentUser?.role !== 'viewer' && (
           <div className="p-4 border-b border-gray-100 bg-gray-50">
             <p className="text-xs text-gray-500 mb-2">Current Account</p>
             <select
