@@ -20,6 +20,9 @@ from typing import Optional, List
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
+# Alert rule thresholds
+ROAS_DROP_THRESHOLD = 0.6  # 40% drop (keep 60% of previous ROAS)
+
 
 def detect_alerts(
     account_id: str,
@@ -75,11 +78,15 @@ def detect_alerts(
 
         # Rule 1: ROAS drop > 40%
         # Check if current ROAS dropped more than 40% vs previous period
-        # Formula: current_roas < previous_roas * 0.6 (i.e., 40% drop)
+        # Formula: current_roas < previous_roas * ROAS_DROP_THRESHOLD (i.e., 40% drop)
         for campaign in campaigns:
             if (campaign['roas'] is not None and campaign['previous_roas'] is not None and
-                campaign['roas'] < campaign['previous_roas'] * 0.6):
-                drop_pct = ((campaign['previous_roas'] - campaign['roas']) / campaign['previous_roas']) * 100
+                campaign['roas'] < campaign['previous_roas'] * ROAS_DROP_THRESHOLD):
+                # Calculate drop percentage safely (avoid division by zero)
+                if campaign['previous_roas'] and campaign['previous_roas'] != 0:
+                    drop_pct = ((campaign['previous_roas'] - campaign['roas']) / campaign['previous_roas']) * 100
+                else:
+                    drop_pct = 100  # Default when previous ROAS is 0 or None
                 alerts.append(Alert(
                     id=f"alert_roas_{campaign['id']}",
                     severity='error',

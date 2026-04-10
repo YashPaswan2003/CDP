@@ -116,7 +116,7 @@ def seed_database():
 
     # Alert rule test campaigns for ethinos account (4 campaigns to trigger each rule)
     alert_test_campaigns = [
-        # Rule 1: ROAS Drop — Current ROAS < Previous ROAS × 0.8
+        # Rule 1: ROAS Drop — Current ROAS < Previous ROAS × 0.6 (40% drop)
         {"id": "camp-alert-01", "account_id": "ethinos", "name": "YouTube Branding Ethinos", "platform": "google", "type": "YouTube", "objective": None, "budget": 28000, "spent": 25000, "impressions": 140000, "clicks": 5200, "conversions": 145, "revenue": 20700, "ctr": 3.71, "cpc": 4.81, "cvr": 2.79, "roas": 1.1, "reach": None, "frequency": None, "previous_roas": 2.0},
         # Rule 2: Audience Fatigue (Meta) — Frequency > 5.0
         {"id": "camp-alert-02", "account_id": "ethinos", "name": "Meta Awareness Ethinos", "platform": "meta", "type": None, "objective": "Awareness", "budget": 20000, "spent": 19000, "impressions": 380000, "clicks": 4560, "conversions": 95, "revenue": 14250, "ctr": 1.2, "cpc": 4.17, "cvr": 2.08, "roas": 0.75, "reach": 65000, "frequency": 5.8},
@@ -134,13 +134,13 @@ def seed_database():
 
         conn.execute(
             """
-            INSERT INTO campaigns (id, account_id, name, platform, type, objective, status, budget, spent, impressions, clicks, conversions, revenue, ctr, cpc, cvr, roas, reach, frequency, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO campaigns (id, account_id, name, platform, type, objective, status, budget, spent, impressions, clicks, conversions, revenue, ctr, cpc, cvr, roas, previous_roas, reach, frequency, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 camp["id"], camp["account_id"], camp["name"], camp["platform"], camp["type"], camp.get("objective"), status,
                 camp["budget"], camp["spent"], camp["impressions"], camp["clicks"], camp["conversions"], camp["revenue"],
-                camp["ctr"], camp["cpc"], camp["cvr"], camp["roas"], camp["reach"], camp["frequency"], datetime.now()
+                camp["ctr"], camp["cpc"], camp["cvr"], camp["roas"], camp.get("previous_roas"), camp["reach"], camp["frequency"], datetime.now()
             ]
         )
 
