@@ -9,15 +9,26 @@ interface HealthDotProps {
 }
 
 /**
+ * Health status thresholds (extracted for reuse across components)
+ * - ERROR_THRESHOLD: < -20% decline = red
+ * - WARNING_THRESHOLD: -10% to -20% decline = yellow
+ * - >= -10% = green (on track)
+ */
+export const HEALTH_THRESHOLDS = {
+  ERROR_THRESHOLD: -0.2,
+  WARNING_THRESHOLD: -0.1,
+} as const;
+
+/**
  * Calculates health status based on percentage change
  * Red: >20% decline, Yellow: 10-20% decline, Green: on-track (within +/- 10%)
  */
 function getHealthStatus(current: number, previous: number): "error" | "warning" | "success" {
   if (previous === 0 || !previous) return "success";
   const change = (current - previous) / previous;
-  if (change < -0.2) return "error";    // < -20% decline
-  if (change < -0.1) return "warning";  // -20% to -10% decline
-  return "success";                      // >= -10%
+  if (change < HEALTH_THRESHOLDS.ERROR_THRESHOLD) return "error";
+  if (change < HEALTH_THRESHOLDS.WARNING_THRESHOLD) return "warning";
+  return "success";
 }
 
 /**
@@ -33,16 +44,16 @@ export function HealthDot({ current, previous, size = "md", showTooltip = true }
   const status = getHealthStatus(current, previous);
   const changePercent = getChangePercent(current, previous);
 
-  const sizeMap = {
+  const sizeMap: Record<"sm" | "md" | "lg", string> = {
     sm: "w-2 h-2",
     md: "w-3 h-3",
     lg: "w-4 h-4",
   };
 
   const colorMap = {
-    error: "bg-red-500",
-    warning: "bg-amber-500",
-    success: "bg-green-500",
+    error: "bg-accent-error",
+    warning: "bg-accent-warning",
+    success: "bg-accent-success",
   };
 
   const tooltipMap = {

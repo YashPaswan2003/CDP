@@ -8,7 +8,7 @@ import { useAccount } from "@/lib/accountContext";
 import { ChartContainer } from "@/components";
 import LineChart from "@/components/charts/LineChart";
 import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
-import { HealthDot } from "@/components/metrics/HealthDot";
+import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
 import { ChevronDown } from "lucide-react";
 
 interface PlatformMetrics {
@@ -52,8 +52,9 @@ const BRAND_FALLBACKS = {
 /**
  * Helper to create metric objects with health data
  * Scenarios: -30%, -15%, +20% for realistic variety
+ * Uses HEALTH_THRESHOLDS to maintain consistent threshold values
  */
-function createMetric(value: string, rawValue: number, healthVariation: number = -0.15): MetricWithHealth {
+function createMetric(value: string, rawValue: number, healthVariation: number = HEALTH_THRESHOLDS.WARNING_THRESHOLD): MetricWithHealth {
   const previous = Math.max(0, rawValue / (1 + healthVariation));
   return {
     value,
