@@ -17,16 +17,42 @@ export function getAnalyticsPath(platform: 'google' | 'dv360' | 'meta'): string 
   return paths[platform];
 }
 
+interface DeepLinkOptions {
+  accountId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 /**
- * Build deep-link URL with campaign filter
+ * Build deep-link URL with campaign filter and optional context
  * @param platform - 'google' | 'dv360' | 'meta'
  * @param campaignName - Campaign name to filter by
- * @returns Full URL with campaign query parameter
+ * @param options - Optional { accountId, dateFrom, dateTo }
+ * @returns Full URL with campaign and context query parameters
+ *
+ * Example: `/dashboard/analytics/google-ads?campaign=YouTube&account_id=ethinos&date_from=2026-04-01&date_to=2026-04-10`
  */
 export function buildCampaignDeepLink(
   platform: 'google' | 'dv360' | 'meta',
   campaignName: string,
+  options?: DeepLinkOptions,
 ): string {
   const basePath = getAnalyticsPath(platform);
-  return `${basePath}?campaign=${encodeURIComponent(campaignName)}`;
+  const params = new URLSearchParams();
+
+  // Required parameter
+  params.set('campaign', campaignName);
+
+  // Optional context parameters
+  if (options?.accountId) {
+    params.set('account_id', options.accountId);
+  }
+  if (options?.dateFrom) {
+    params.set('date_from', options.dateFrom);
+  }
+  if (options?.dateTo) {
+    params.set('date_to', options.dateTo);
+  }
+
+  return `${basePath}?${params.toString()}`;
 }

@@ -18,6 +18,9 @@ interface RecommendationPanelProps {
   recommendations: Recommendation[];
   onDismiss?: (id: string) => void;
   onAction?: (id: string) => void;  // [View] button callback
+  accountId?: string;  // Account ID for deep-links
+  dateFrom?: string;   // Date range start (YYYY-MM-DD)
+  dateTo?: string;     // Date range end (YYYY-MM-DD)
 }
 
 /**
@@ -32,7 +35,10 @@ interface RecommendationPanelProps {
 export function RecommendationPanel({
   recommendations,
   onDismiss,
-  onAction
+  onAction,
+  accountId,
+  dateFrom,
+  dateTo
 }: RecommendationPanelProps) {
   const router = useRouter();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
@@ -82,7 +88,11 @@ export function RecommendationPanel({
   };
 
   const handleViewAction = (rec: Recommendation) => {
-    const deepLink = buildCampaignDeepLink(rec.platform, rec.campaign);
+    const deepLink = buildCampaignDeepLink(rec.platform, rec.campaign, {
+      accountId,
+      dateFrom,
+      dateTo,
+    });
     router.push(deepLink);
     onAction?.(rec.id);
   };

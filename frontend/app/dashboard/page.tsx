@@ -530,7 +530,13 @@ export default function PortfolioPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       {/* Alerts Strip */}
-      <AlertStrip alerts={alerts} onDismiss={handleDismissAlert} />
+      <AlertStrip
+        alerts={alerts}
+        onDismiss={handleDismissAlert}
+        accountId={selectedAccount?.id}
+        dateFrom={monthFrom}
+        dateTo={monthTo}
+      />
 
       {/* Header */}
       <motion.div
@@ -734,6 +740,9 @@ export default function PortfolioPage() {
         recommendations={recommendations}
         onDismiss={handleDismissRecommendation}
         onAction={handleRecommendationAction}
+        accountId={selectedAccount?.id}
+        dateFrom={monthFrom}
+        dateTo={monthTo}
       />
     </motion.div>
   );

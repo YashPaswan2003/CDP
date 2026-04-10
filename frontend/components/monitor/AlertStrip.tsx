@@ -17,6 +17,9 @@ export interface Alert {
 interface AlertStripProps {
   alerts: Alert[];
   onDismiss: (alertId: string) => void;
+  accountId?: string;  // Account ID for deep-links
+  dateFrom?: string;   // Date range start (YYYY-MM-DD)
+  dateTo?: string;     // Date range end (YYYY-MM-DD)
 }
 
 /**
@@ -28,7 +31,7 @@ interface AlertStripProps {
  *
  * Displays nothing when alerts array is empty.
  */
-export function AlertStrip({ alerts, onDismiss }: AlertStripProps) {
+export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: AlertStripProps) {
   const router = useRouter();
   if (!alerts || alerts.length === 0) {
     return null;
@@ -63,16 +66,16 @@ export function AlertStrip({ alerts, onDismiss }: AlertStripProps) {
       {alerts.map((alert, idx) => {
         const styles = severityStyles[alert.severity];
 
-        const handleAlertClick = (e: React.MouseEvent) => {
-          // Only navigate if clicking on the message area, not the dismiss button
-          if ((e.target as HTMLElement).closest('button')) {
-            return;
-          }
-
+        const handleViewAlert = () => {
           if (alert.platform && alert.campaign) {
             const deepLink = buildCampaignDeepLink(
               alert.platform as 'google' | 'dv360' | 'meta',
               alert.campaign,
+              {
+                accountId,
+                dateFrom,
+                dateTo,
+              }
             );
             router.push(deepLink);
           } else if (alert.targetPage) {
@@ -86,26 +89,37 @@ export function AlertStrip({ alerts, onDismiss }: AlertStripProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.1, duration: 0.3 }}
-            onClick={handleAlertClick}
-            className={`flex items-center justify-between px-4 py-3 rounded-lg border ${styles.container} ${
-              (alert.platform && alert.campaign) || alert.targetPage
-                ? 'cursor-pointer hover:shadow-md transition-shadow'
-                : ''
-            }`}
+            className={`flex items-center justify-between px-4 py-3 rounded-lg border ${styles.container}`}
           >
-            <div className={`flex items-center gap-3 ${styles.text} text-sm`}>
+            <div className={`flex items-center gap-3 ${styles.text} text-sm flex-1`}>
               <span className="text-base">{styles.icon}</span>
               <span className="font-medium">{alert.message}</span>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onDismiss(alert.id)}
-              className={`flex-shrink-0 p-1 rounded hover:bg-white/30 transition-colors ${styles.text}`}
-              aria-label={`Dismiss alert: ${alert.message}`}
-            >
-              <X className="w-4 h-4" />
-            </motion.button>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+              {((alert.platform && alert.campaign) || alert.targetPage) && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleViewAlert}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${styles.text} hover:bg-white/20`}
+                  aria-label={`View details for: ${alert.message}`}
+                >
+                  View
+                </motion.button>
+              )}
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onDismiss(alert.id)}
+                className={`flex-shrink-0 p-1 rounded hover:bg-white/30 transition-colors ${styles.text}`}
+                aria-label={`Dismiss alert: ${alert.message}`}
+              >
+                <X className="w-4 h-4" />
+              </motion.button>
+            </div>
           </motion.div>
         );
       })}
