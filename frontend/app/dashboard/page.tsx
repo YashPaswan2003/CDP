@@ -486,7 +486,7 @@ export default function PortfolioPage() {
     .filter(([_, p]) => p.isActive)
     .sort(([_, a], [__, b]) => (b.revenue / b.spend || 0) - (a.revenue / a.spend || 0))[0];
 
-  const tofuInsight = topPlatformByImpressions
+  const tofuInsight = topPlatformByImpressions && data.total_impressions > 0
     ? `${topPlatformByImpressions[1].name} driving ${Math.round(
         (topPlatformByImpressions[1].impressions / data.total_impressions) * 100
       )}% of impressions`
