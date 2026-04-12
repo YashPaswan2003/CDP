@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.models.dashboard import DashboardResponse, CampaignMetrics, MetricRow
 from app.database.connection import get_connection
+from app.routes.auth import get_current_user
 from datetime import datetime
 import logging
 
@@ -10,6 +11,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/{client_id}", response_model=DashboardResponse)
 def get_dashboard(
     client_id: str,
+    current_user: dict = Depends(get_current_user),
     start_date: str = Query(None),
     end_date: str = Query(None)
 ):

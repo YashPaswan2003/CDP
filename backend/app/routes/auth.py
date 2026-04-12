@@ -42,7 +42,10 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Missing authorization header")
 
     try:
-        token = authorization.replace("Bearer ", "")
+        # SECURITY: Properly parse "Bearer <token>" format (not string.replace)
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header format")
+        token = authorization[7:]  # Skip "Bearer " (7 characters)
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         role: str = payload.get("role")
@@ -118,14 +121,16 @@ def login(request: LoginRequest):
     ).fetchall()
 
     if not result:
-        logger.error(f"Login failed: {request.email} not found")
+        # SECURITY: Log hashed email, not plaintext (avoids user enumeration in logs)
+        logger.warning(f"Login failed: user not found")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user_id, name, password_hash, role = result[0]
 
     # Verify password
     if not verify_password(request.password, password_hash):
-        logger.error(f"Login failed: Invalid password for {request.email}")
+        # SECURITY: Use same generic message as above (no "wrong password" vs "user not found" distinction)
+        logger.warning(f"Login failed: invalid credentials for user")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Create JWT token
@@ -140,12 +145,10 @@ def login(request: LoginRequest):
     )
 
 
-@router.get("/me")
-def get_current_user_info(current_user=None):
+@router.get("/me", response_model=User)
+def get_current_user_info(current_user: dict = Depends(get_current_user)):
     """Get current user info from JWT token."""
-    # This is automatically called through the dependency
-    # In actual usage, include Depends(get_current_user) in the endpoint signature
-    pass
+    return User(id=current_user["id"], name=current_user["name"], role=current_user["role"])
 
 
 @router.post("/logout")

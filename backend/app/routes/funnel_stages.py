@@ -1,13 +1,16 @@
 """Funnel stage management routes."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.database.connection import get_connection
 from app.services.ingestion import DEFAULT_FUNNEL_STAGES
+from app.routes.auth import get_current_user
+import logging
 
+logger = logging.getLogger("api")
 router = APIRouter(prefix="/api/clients", tags=["funnel_stages"])
 
 
 @router.post("/{account_id}/seed-funnel-stages")
-async def seed_funnel_stages(account_id: str):
+async def seed_funnel_stages(account_id: str, current_user: dict = Depends(get_current_user)):
     """Seed default funnel stages for a new client (QI Spine)."""
     conn = get_connection()
     try:
@@ -37,4 +40,5 @@ async def seed_funnel_stages(account_id: str):
 
     except Exception as e:
         conn.close()
-        raise HTTPException(status_code=500, detail=f"Failed to seed funnel stages: {str(e)}")
+        logger.error(f"Failed to seed funnel stages for account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

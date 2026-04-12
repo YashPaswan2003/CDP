@@ -3,8 +3,9 @@ Analytics endpoints for multi-platform data.
 All endpoints support account_id and platform filters.
 """
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.database.connection import get_connection
+from app.routes.auth import get_current_user
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -13,6 +14,7 @@ router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 # ========== CAMPAIGNS ==========
 @router.get("/campaigns")
 def get_campaigns(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     platform: str = Query(None),
 ):
@@ -67,7 +69,11 @@ def get_campaigns(
 
 # ========== AD GROUPS ==========
 @router.get("/ad-groups")
-def get_ad_groups(account_id: str = Query(None), campaign_id: str = Query(None)):
+def get_ad_groups(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    campaign_id: str = Query(None),
+):
     """Get ad groups with optional filters."""
     conn = get_connection()
 
@@ -111,7 +117,11 @@ def get_ad_groups(account_id: str = Query(None), campaign_id: str = Query(None))
 
 # ========== AD SETS ==========
 @router.get("/ad-sets")
-def get_ad_sets(account_id: str = Query(None), campaign_id: str = Query(None)):
+def get_ad_sets(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    campaign_id: str = Query(None),
+):
     """Get ad sets with optional filters."""
     conn = get_connection()
 
@@ -155,7 +165,11 @@ def get_ad_sets(account_id: str = Query(None), campaign_id: str = Query(None)):
 
 # ========== INSERTION ORDERS ==========
 @router.get("/insertion-orders")
-def get_insertion_orders(account_id: str = Query(None), campaign_id: str = Query(None)):
+def get_insertion_orders(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    campaign_id: str = Query(None),
+):
     """Get insertion orders with optional filters."""
     conn = get_connection()
 
@@ -200,6 +214,7 @@ def get_insertion_orders(account_id: str = Query(None), campaign_id: str = Query
 # ========== LINE ITEMS ==========
 @router.get("/line-items")
 def get_line_items(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     insertion_order_id: str = Query(None),
 ):
@@ -248,7 +263,12 @@ def get_line_items(
 
 # ========== GEO DATA ==========
 @router.get("/geo")
-def get_geo_data(account_id: str = Query(None), platform: str = Query(None), state: str = Query(None)):
+def get_geo_data(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    platform: str = Query(None),
+    state: str = Query(None),
+):
     """Get geographical data with optional filters."""
     conn = get_connection()
 
@@ -296,6 +316,7 @@ def get_geo_data(account_id: str = Query(None), platform: str = Query(None), sta
 # ========== DEMOGRAPHICS ==========
 @router.get("/demographics")
 def get_demographics(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     platform: str = Query(None),
     dimension: str = Query(None),
@@ -344,7 +365,11 @@ def get_demographics(
 
 # ========== PLACEMENTS ==========
 @router.get("/placements")
-def get_placements(account_id: str = Query(None), platform: str = Query(None)):
+def get_placements(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    platform: str = Query(None),
+):
     """Get placement data with optional filters."""
     conn = get_connection()
 
@@ -393,6 +418,7 @@ def get_placements(account_id: str = Query(None), platform: str = Query(None)):
 # ========== CREATIVES ==========
 @router.get("/creatives")
 def get_creatives(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     platform: str = Query(None),
     campaign_id: str = Query(None),
@@ -447,7 +473,10 @@ def get_creatives(
 
 # ========== SEARCH TERMS ==========
 @router.get("/search-terms")
-def get_search_terms(account_id: str = Query(None)):
+def get_search_terms(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+):
     """Get search term data."""
     conn = get_connection()
 
@@ -485,7 +514,10 @@ def get_search_terms(account_id: str = Query(None)):
 
 # ========== PMAX CHANNELS ==========
 @router.get("/pmax-channels")
-def get_pmax_channels(account_id: str = Query(None)):
+def get_pmax_channels(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+):
     """Get PMax channel data."""
     conn = get_connection()
 
@@ -524,6 +556,7 @@ def get_pmax_channels(account_id: str = Query(None)):
 # ========== DAILY METRICS ==========
 @router.get("/daily-metrics")
 def get_daily_metrics(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     campaign_id: str = Query(None),
     platform: str = Query(None),
@@ -575,6 +608,7 @@ def get_daily_metrics(
 # ========== FUNNEL (TOFU/MOFU/BOFU) ==========
 @router.get("/funnel")
 def get_funnel(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     date_from: str = Query(None),
     date_to: str = Query(None),
@@ -662,6 +696,7 @@ def get_funnel(
 # ========== SUMMARY ==========
 @router.get("/summary")
 def get_summary(
+    current_user: dict = Depends(get_current_user),
     account_id: str = Query(None),
     date_from: str = Query(None),
     date_to: str = Query(None),
@@ -728,7 +763,7 @@ def get_summary(
 
 # ========== PERIOD COMPARISON ==========
 @router.get("/period-comparison")
-def get_period_comparison():
+def get_period_comparison(current_user: dict = Depends(get_current_user)):
     """Get month-over-month comparison data."""
     comparison = {
         "month": [

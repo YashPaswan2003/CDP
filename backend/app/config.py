@@ -1,7 +1,20 @@
 import os
+import sys
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import List
+
+
+def _require_secret_key() -> str:
+    key = os.getenv("SECRET_KEY")
+    if not key:
+        print(
+            "FATAL: SECRET_KEY environment variable is not set. "
+            "Set it to a strong random value before starting the server.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return key
 
 
 class Settings(BaseSettings):
@@ -9,12 +22,12 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "Ethinos Marketing Platform"
-    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
 
     # Database
     DB_PATH: str = os.getenv("DB_PATH", str(Path(__file__).parent.parent.parent / "ethinos.duckdb"))
 
-    # Security
+    # Security — no default; app exits at startup if unset
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
     # CORS — comma-separated origins in env, list here as default

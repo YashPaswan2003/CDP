@@ -8,9 +8,10 @@ from pathlib import Path
 from datetime import datetime
 from uuid import uuid4
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 from app.database.connection import get_connection
+from app.routes.auth import get_current_user
 from app.services.ingestion import (
     parse_file,
     classify_sheets,
@@ -61,7 +62,8 @@ class AIReviewResponse(BaseModel):
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_upload(
     file: UploadFile = File(...),
-    account_id: str = None
+    account_id: str = None,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Step 1: Analyze uploaded file.
@@ -92,6 +94,12 @@ async def analyze_upload(
         safe_filename = Path(file.filename).name
         file_path = UPLOADS_DIR / f"{upload_id}_{safe_filename}"
         content = await file.read()
+
+        # SECURITY: Limit file size to 50 MB
+        MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Maximum size: 50 MB")
+
         with open(file_path, "wb") as f:
             f.write(content)
 
@@ -103,14 +111,14 @@ async def analyze_upload(
         included_sheets = [s for s in classified_list if s["type"] != "skip"]
         skipped_sheets = [s for s in classified_list if s["type"] == "skip"]
 
-        # Create upload record in DB
+        # Create upload record in DB (SECURITY: store safe_filename, not raw file.filename)
         conn.execute(f"""
             INSERT INTO uploads (id, account_id, file_name, file_path, file_type, status)
             VALUES (?, ?, ?, ?, ?, ?)
         """, [
             upload_id,
             account_id or "unknown",
-            file.filename,
+            safe_filename,
             str(file_path),
             file_ext.lstrip("."),
             "analyzing"
@@ -154,7 +162,7 @@ async def analyze_upload(
             logger.error(f"Failed to create AnalyzeResponse: {e}")
             logger.error(f"included_sheets: {included_sheets}")
             logger.error(f"skipped_sheets: {skipped_sheets}")
-            raise HTTPException(status_code=500, detail=f"Response creation failed: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     except HTTPException:
         raise
@@ -162,17 +170,18 @@ async def analyze_upload(
         logger.error(f"Analysis failed: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        # Return 400 for parsing errors, 500 for other errors
+        # Return 400 for parsing errors, 500 for other errors (without exposing details)
         from app.services.ingestion.parser import ParsingError
         if isinstance(e, ParsingError):
-            raise HTTPException(status_code=400, detail=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=400, detail="File parsing failed")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/confirm")
 async def confirm_upload(
     request: ConfirmRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Step 2: Confirm upload with column mappings.
@@ -216,7 +225,7 @@ async def confirm_upload(
 
     except Exception as e:
         logger.error(f"Confirm failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 async def process_upload_async(upload_id: str, account_id: str, sheet_mappings: dict):
@@ -290,7 +299,10 @@ async def process_upload_async(upload_id: str, account_id: str, sheet_mappings: 
 
 
 @router.get("/status/{upload_id}", response_model=StatusResponse)
-async def get_upload_status(upload_id: str):
+async def get_upload_status(
+    upload_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """Poll upload status."""
     try:
         conn = get_connection()
@@ -318,11 +330,14 @@ async def get_upload_status(upload_id: str):
         raise
     except Exception as e:
         logger.error(f"Status check failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/uploads/{client_id}/history")
-async def get_upload_history(client_id: str):
+async def get_upload_history(
+    client_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """Get upload history for a client."""
     try:
         conn = get_connection()
@@ -353,7 +368,7 @@ async def get_upload_history(client_id: str):
 
     except Exception as e:
         logger.error(f"History fetch failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 def call_claude_for_file_analysis(
@@ -488,7 +503,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
 
 @router.post("/ai-review", response_model=AIReviewResponse)
-async def ai_review_upload(request: AIReviewRequest):
+async def ai_review_upload(
+    request: AIReviewRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Phase 4: Post-upload AI review using Claude.
 
@@ -532,7 +550,7 @@ async def ai_review_upload(request: AIReviewRequest):
         except Exception as e:
             conn.close()
             logger.error(f"Failed to parse file {file_path}: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
+            raise HTTPException(status_code=400, detail="Failed to parse file")
 
         # Build sheet info for Claude
         # classify_sheets returns a list of dicts with keys: sheet_name, type, rows, reason
@@ -579,4 +597,4 @@ async def ai_review_upload(request: AIReviewRequest):
         raise
     except Exception as e:
         logger.error(f"AI review failed for {request.upload_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

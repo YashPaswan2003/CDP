@@ -1,13 +1,17 @@
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.chat import ChatRequest, ChatResponse
+from app.routes.auth import get_current_user
 import logging
 
 logger = logging.getLogger("api")
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("/", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """Chat with Claude AI for insights and analysis."""
     try:
         # Phase 0: Mock response. Phase 1+: Integrate with Claude API
@@ -33,4 +37,4 @@ async def chat(request: ChatRequest):
 
     except Exception as e:
         logger.error(f"Chat error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
