@@ -192,3 +192,19 @@ All 8 critical issues from user feedback resolved:
 - Design System: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
 - Railway Dashboard: [dashboard.railway.app](https://dashboard.railway.app)
 - Cloudflare Pages: Deploy via wrangler
+
+## Skills
+
+- **caveman** (`~/.claude/skills/caveman/SKILL.md`) — Ultra-compressed communication mode. Cuts ~75% output tokens. Trigger: `/caveman`
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) — Codebase knowledge graph builder. Trigger: `/graphify`
+
+When the user types `/caveman` or `/graphify`, invoke the Skill tool with the matching skill name before doing anything else.
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current

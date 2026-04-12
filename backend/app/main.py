@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,36 +39,11 @@ db_handler = logging.FileHandler(log_dir / "database.log")
 db_handler.setFormatter(JSONFormatter())
 db_logger.addHandler(db_handler)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """FastAPI lifespan context manager."""
-    # Startup
-    api_logger.info("Initializing database...")
-    init_db()
-
-    # Check if data needs loading
-    conn = get_connection()
-    result = conn.execute("SELECT COUNT(*) as count FROM campaigns").fetchall()
-    campaigns_count = result[0][0]
-    conn.close()
-
-    if campaigns_count == 0:
-        api_logger.info("Loading sample data...")
-        seed_database()
-
-    api_logger.info(f"Database ready. Campaigns records: {campaigns_count}")
-
-    yield
-
-    # Shutdown
-    api_logger.info("Shutting down...")
-
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     description="CDP Marketing Platform API",
     version="0.1.0",
-    lifespan=lifespan
 )
 
 # Add CORS middleware with environment-driven origins
@@ -80,6 +54,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Startup event handler
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on app startup."""
+    api_logger.info("Initializing database...")
+    try:
+        init_db()
+
+        # Check if data needs loading
+        conn = get_connection()
+        result = conn.execute("SELECT COUNT(*) as count FROM campaigns").fetchall()
+        campaigns_count = result[0][0]
+        conn.close()
+
+        if campaigns_count == 0:
+            api_logger.info("Loading sample data...")
+            seed_database()
+
+        api_logger.info(f"Database ready. Campaigns records: {campaigns_count}")
+    except Exception as e:
+        api_logger.error(f"Startup error: {str(e)}", exc_info=True)
 
 # Include routers
 app.include_router(alerts.router, prefix="/api")  # Health alerts and anomaly detection (registered first)
