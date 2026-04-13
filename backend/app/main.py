@@ -85,6 +85,18 @@ async def startup_event():
                 api_logger.info("Realistic client data seeded successfully")
             else:
                 api_logger.info("Realistic client data already exists, skipping")
+                # Ensure user_accounts links exist (may have been missed in earlier deploys)
+                for client_id in ['urbancart', 'propnest', 'cloudstack', 'freshbite']:
+                    try:
+                        check_conn.execute("INSERT INTO user_accounts (user_id, account_id) VALUES ('user-001', ?)", [client_id])
+                    except Exception:
+                        pass
+                    try:
+                        check_conn.execute("INSERT INTO user_accounts (user_id, account_id) VALUES ('user-002', ?)", [client_id])
+                    except Exception:
+                        pass
+                check_conn.commit()
+                api_logger.info("Ensured user_accounts links for realistic clients")
         except Exception as e:
             api_logger.error(f"Failed to seed realistic data: {str(e)}", exc_info=True)
         finally:
