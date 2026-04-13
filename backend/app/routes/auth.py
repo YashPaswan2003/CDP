@@ -1,7 +1,7 @@
 from jose import JWTError, jwt
 import bcrypt
 from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from app.models.auth import RegisterRequest, LoginRequest, AuthResponse, User
 from app.database.connection import get_connection
 from app.config import settings

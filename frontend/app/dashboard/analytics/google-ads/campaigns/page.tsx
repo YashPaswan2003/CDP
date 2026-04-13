@@ -3,7 +3,7 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer } from "@/components";
-import { getMockCampaigns } from "@/lib/mockData";
+import { fetchCampaigns } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -11,14 +11,34 @@ export default function GoogleAdsCampaigns() {
   const { selectedAccount } = useAccount();
   const pathname = usePathname();
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
 
   useEffect(() => {
-    const allCampaigns = getMockCampaigns().filter((c) => c.platform === "google");
-    setCampaigns(allCampaigns);
-  }, []);
+    const loadCampaigns = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchCampaigns({
+          account_id: selectedAccount?.id,
+          platform: "google"
+        });
+        setCampaigns(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load campaigns");
+        setCampaigns([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedAccount?.id) {
+      loadCampaigns();
+    }
+  }, [selectedAccount?.id]);
 
   const subNavItems = [
     { label: "Overview", href: "/dashboard/analytics/google-ads" },
@@ -87,7 +107,18 @@ export default function GoogleAdsCampaigns() {
         </div>
       </div>
 
+      {/* Loading / Error States */}
+      {loading && (
+        <div className="text-center py-8 text-text-secondary">Loading campaigns...</div>
+      )}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-4 text-red-400 mb-4">
+          Error: {error}
+        </div>
+      )}
+
       {/* Table */}
+      {!loading && !error && (
       <ChartContainer title="Campaigns">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -167,6 +198,7 @@ export default function GoogleAdsCampaigns() {
           </div>
         </div>
       </ChartContainer>
+      )}
     </div>
   );
 }
