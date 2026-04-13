@@ -74,22 +74,22 @@ async def startup_event():
             api_logger.info("Loading sample data...")
             seed_database()
 
-            # Seed realistic client data (UrbanCart, PropNest, CloudStack, FreshBite)
-            check_conn = None
-            try:
-                check_conn = get_connection()
-                realistic_check = check_conn.execute("SELECT COUNT(*) FROM accounts WHERE id = 'urbancart'").fetchone()
-                if realistic_check[0] == 0:
-                    api_logger.info("Seeding realistic client data...")
-                    seed_realistic_data(check_conn)
-                    api_logger.info("Realistic client data seeded successfully")
-                else:
-                    api_logger.info("Realistic client data already exists, skipping")
-            except Exception as e:
-                api_logger.error(f"Failed to seed realistic data: {str(e)}", exc_info=True)
-            finally:
-                if check_conn:
-                    check_conn.close()
+        # Seed realistic client data (always check, independent of campaigns_count)
+        check_conn = None
+        try:
+            check_conn = get_connection()
+            realistic_check = check_conn.execute("SELECT COUNT(*) FROM accounts WHERE id = 'urbancart'").fetchone()
+            if realistic_check[0] == 0:
+                api_logger.info("Seeding realistic client data (UrbanCart, PropNest, CloudStack, FreshBite)...")
+                seed_realistic_data(check_conn)
+                api_logger.info("Realistic client data seeded successfully")
+            else:
+                api_logger.info("Realistic client data already exists, skipping")
+        except Exception as e:
+            api_logger.error(f"Failed to seed realistic data: {str(e)}", exc_info=True)
+        finally:
+            if check_conn:
+                check_conn.close()
 
         api_logger.info(f"Database ready. Campaigns records: {campaigns_count}")
     except Exception as e:
