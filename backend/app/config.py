@@ -36,8 +36,9 @@ class Settings(BaseSettings):
         "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,https://ethinos-cdp.pages.dev,https://main.ethinos-cdp.pages.dev"
     )
 
-    # Claude AI
-    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    # LLM API Keys
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")  # Claude (deprecated, using OpenRouter)
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")  # OpenRouter with Gemma 4 31B free
 
     @property
     def cors_origins_list(self) -> List[str]:
