@@ -469,6 +469,105 @@ export async function fetchAlerts(filters?: {
   ).then((res: any) => res.alerts || []);
 }
 
+// ========== FLAGS (MONITOR/DIAGNOSE/ACT) ==========
+export async function getFlags(accountId: string): Promise<any> {
+  const params = new URLSearchParams();
+  params.append('account_id', accountId);
+
+  return fetchWithFallback(
+    `/api/flags?${params.toString()}`,
+    () => ({
+      flags: [
+        {
+          metric: "roas",
+          current: 2.5,
+          previous: 3.2,
+          entities: ["camp_001"],
+          entity_count: 1,
+          severity: "high",
+          explanation: "ROAS dropped 21.9% (2.50 vs 3.20). May indicate audience saturation or quality issues.",
+          actions: [
+            { type: "pause", label: "Pause campaign", severity: "high" },
+            { type: "review_quality", label: "Review quality score", severity: "medium" },
+            { type: "details", label: "View details", severity: "low" },
+          ],
+        },
+        {
+          metric: "conversions",
+          entities: ["kw_123", "kw_456"],
+          entity_count: 2,
+          severity: "high",
+          explanation: "2 keywords have spend but zero conversions. Check tracking setup or landing page experience.",
+          actions: [
+            { type: "pause", label: "Pause keywords", severity: "high" },
+            { type: "review_quality", label: "Check tracking", severity: "medium" },
+            { type: "details", label: "View details", severity: "low" },
+          ],
+        },
+        {
+          metric: "frequency",
+          current: 5.8,
+          entities: ["camp_002"],
+          entity_count: 1,
+          severity: "medium",
+          explanation: "Meta frequency at 5.80x (threshold: 5.00). Risk of audience fatigue and ad blindness.",
+          actions: [
+            { type: "adjust_bid", label: "Increase budget for expansion", severity: "medium" },
+            { type: "details", label: "View audience overlap", severity: "low" },
+          ],
+        },
+      ],
+      severity_distribution: { high: 2, medium: 1, low: 0 },
+    }),
+  );
+}
+
+// ========== CONFIG (CLIENT SETUP) ==========
+export async function getConfig(accountId: string): Promise<any> {
+  const params = new URLSearchParams();
+  params.append('account_id', accountId);
+
+  return fetchWithFallback(
+    `/api/config?${params.toString()}`,
+    () => ({
+      id: "cfg_demo",
+      account_id: accountId,
+      roas_threshold: 3.0,
+      cpa_threshold: 50,
+      spend_pace_pct: 100.0,
+      ctr_threshold: 0.02,
+      cvr_threshold: 0.02,
+      quality_score_threshold: 7,
+      frequency_threshold: 5.0,
+      currency: "INR",
+      is_configured: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }),
+  );
+}
+
+export async function setConfig(accountId: string, config: any): Promise<any> {
+  const params = new URLSearchParams();
+  params.append('account_id', accountId);
+
+  return fetchWithFallback(
+    `/api/config?${params.toString()}`,
+    () => ({
+      ...config,
+      id: "cfg_demo",
+      account_id: accountId,
+      is_configured: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }),
+    {
+      method: "POST",
+      body: JSON.stringify(config),
+    },
+  );
+}
+
 // ========== STUB APIS FOR PHASE 0 ==========
 // These are stubs to satisfy imports in auth, chat, upload pages during Phase 0.
 // Phase 1 will replace these with real backend calls.
@@ -530,3 +629,38 @@ export const uploadAPI = {
     data: { filename: file.name, rows_imported: 0, status: "success" },
   }),
 };
+
+// ========== ACTIONS (EXECUTION) ==========
+export async function executeAction(
+  accountId: string,
+  actionType: string,
+  entityType: string,
+  entityId: string,
+  parameters?: Record<string, any>,
+): Promise<any> {
+  return fetchWithFallback(
+    `/api/actions/${actionType}`,
+    () => ({
+      success: true,
+      message: `Action ${actionType} executed successfully`,
+      action_type: actionType,
+      updated_entity: {
+        entity_id: entityId,
+        entity_type: entityType,
+        field: actionType === 'pause' || actionType === 'resume' ? 'status' : 'budget',
+        previous_value: 'unknown',
+        new_value: 'updated',
+      },
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      method: "POST",
+      body: JSON.stringify({
+        entity_type: entityType,
+        entity_id: entityId,
+        account_id: accountId,
+        parameters: parameters,
+      }),
+    },
+  );
+}

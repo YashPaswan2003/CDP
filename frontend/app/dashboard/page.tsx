@@ -11,6 +11,9 @@ import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
 import { RecommendationPanel, type Recommendation } from "@/components/ai/RecommendationPanel";
 import { getMockRecommendations } from "@/lib/mockData";
 import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
+import { MonitorDiagnoseAct } from "@/components/MonitorDiagnoseAct";
+import { ConfigSetupModal } from "@/components/ConfigSetupModal";
+import { getConfig } from "@/lib/api";
 import { ChevronDown } from "lucide-react";
 import { buildCampaignDeepLink } from "@/lib/analytics";
 
@@ -327,6 +330,8 @@ export default function PortfolioPage() {
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [showConfigSetup, setShowConfigSetup] = useState(false);
+  const [configChecked, setConfigChecked] = useState(false);
 
   // Month filter state
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
@@ -346,6 +351,23 @@ export default function PortfolioPage() {
   const monthFrom = `${selectedMonth.year}-${String(selectedMonth.month).padStart(2, "0")}-01`;
   const monthTo = `${selectedMonth.year}-${String(selectedMonth.month).padStart(2, "0")}-${daysInMonth(selectedMonth.month, selectedMonth.year)}`;
   const monthLabel = `${monthNames[selectedMonth.month - 1]} ${selectedMonth.year}`;
+
+  // Check if config is set up
+  useEffect(() => {
+    const checkConfig = async () => {
+      if (!selectedAccount?.id) return;
+      try {
+        const config = await getConfig(selectedAccount.id);
+        if (!config.is_configured) {
+          setShowConfigSetup(true);
+        }
+        setConfigChecked(true);
+      } catch (err) {
+        setConfigChecked(true);
+      }
+    };
+    checkConfig();
+  }, [selectedAccount?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -574,6 +596,9 @@ export default function PortfolioPage() {
         dateFrom={monthFrom}
         dateTo={monthTo}
       />
+
+      {/* Monitor/Diagnose/Act */}
+      <MonitorDiagnoseAct accountId={selectedAccount?.id} />
 
       {/* Header */}
       <motion.div
@@ -807,6 +832,17 @@ export default function PortfolioPage() {
         accountId={selectedAccount?.id}
         dateFrom={monthFrom}
         dateTo={monthTo}
+      />
+
+      {/* Config Setup Modal */}
+      <ConfigSetupModal
+        accountId={selectedAccount?.id || ""}
+        isOpen={showConfigSetup && configChecked}
+        onClose={() => setShowConfigSetup(false)}
+        onComplete={() => {
+          setShowConfigSetup(false);
+          setConfigChecked(false);
+        }}
       />
     </motion.div>
   );
