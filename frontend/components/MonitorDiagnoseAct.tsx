@@ -15,7 +15,7 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const loadFlags = async () => {

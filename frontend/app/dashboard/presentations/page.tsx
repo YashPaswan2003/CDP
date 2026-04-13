@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Button, MetricBadge } from "@/components";
 import { BarChart3, Download, Eye, Plus, Loader } from "lucide-react";
-import { AccountContext } from "@/lib/accountContext";
+import { useAccount } from "@/lib/accountContext";
 
 interface Presentation {
   id: string;
@@ -15,8 +15,8 @@ interface Presentation {
 }
 
 export default function PresentationsPage() {
-  const accountContext = useContext(AccountContext);
-  const accountId = accountContext?.selectedAccountId || "";
+  const account = useAccount();
+  const accountId = account?.selectedAccount?.id || "";
 
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [presentations, setPresentations] = useState<Presentation[]>([]);
@@ -186,33 +186,34 @@ export default function PresentationsPage() {
               <p className="text-sm text-text-secondary mb-4">{presentation.client_id}</p>
               <p className="text-xs text-text-tertiary mb-6">Created {presentation.created_at?.substring(0, 10)}</p>
 
-            {/* Card Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewingId(presentation.id)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                View
-              </button>
-              <button
-                onClick={() => {
-                  const element = document.createElement("a");
-                  element.href = "data:text/plain,Presentation Download (Phase 1 feature)";
-                  element.download = `${presentation.title}.txt`;
-                  document.body.appendChild(element);
-                  element.click();
-                  document.body.removeChild(element);
-                }}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-surface-hover border border-border-primary hover:bg-surface-elevated text-text-primary font-medium text-sm rounded transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Download
-              </button>
+              {/* Card Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setViewingId(presentation.id)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+                <button
+                  onClick={() => {
+                    const element = document.createElement("a");
+                    element.href = "data:text/plain,Presentation Download (Phase 1 feature)";
+                    element.download = `${presentation.title}.txt`;
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-surface-hover border border-border-primary hover:bg-surface-elevated text-text-primary font-medium text-sm rounded transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* No Presentations State */}
       {!loading && presentations.length === 0 && (
@@ -222,8 +223,6 @@ export default function PresentationsPage() {
           <Button variant="primary" onClick={() => setGeneratingModal(true)}>
             Create First Presentation
           </Button>
-        </div>
-      )}
         </div>
       )}
 
