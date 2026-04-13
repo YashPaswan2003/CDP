@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.connection import init_db, get_connection
 from app.database.seed import seed_database
-from app.routes import auth, upload, dashboard, chat, analytics, accounts, alerts
+from app.routes import auth, upload, dashboard, chat, analytics, accounts, alerts, config, flags, actions, presentations
 from app.routes.funnel_stages import router as funnel_stages_router
 
 # Configure logging
@@ -78,7 +78,11 @@ async def startup_event():
         api_logger.error(f"Startup error: {str(e)}", exc_info=True)
 
 # Include routers
-app.include_router(alerts.router, prefix="/api")  # Health alerts and anomaly detection (registered first)
+app.include_router(config.router)  # Client config (required for flags)
+app.include_router(flags.router)   # Monitor/Diagnose/Act flags
+app.include_router(actions.router)  # Action execution (pause, resume, adjust, etc.)
+app.include_router(presentations.router)  # Presentation generation
+app.include_router(alerts.router, prefix="/api")  # Health alerts and anomaly detection
 app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(upload.router)

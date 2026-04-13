@@ -36,6 +36,9 @@ class Settings(BaseSettings):
         "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,https://ethinos-cdp.pages.dev,https://main.ethinos-cdp.pages.dev"
     )
 
+    # Claude AI
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

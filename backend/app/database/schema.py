@@ -379,11 +379,43 @@ def create_tables(conn):
         )
     """)
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS client_config (
+            id               VARCHAR PRIMARY KEY,
+            account_id       VARCHAR NOT NULL UNIQUE,
+            roas_threshold   DECIMAL(8,2) NOT NULL DEFAULT 3.0,
+            cpa_threshold    DECIMAL(10,2),
+            spend_pace_pct   DECIMAL(8,2) DEFAULT 100.0,
+            ctr_threshold    DECIMAL(8,4),
+            cvr_threshold    DECIMAL(8,4),
+            quality_score_threshold INTEGER DEFAULT 7,
+            frequency_threshold DECIMAL(8,2) DEFAULT 5.0,
+            currency         VARCHAR(3) DEFAULT 'INR',
+            is_configured    BOOLEAN DEFAULT FALSE,
+            created_at       TIMESTAMP DEFAULT NOW(),
+            updated_at       TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS actions_log (
+            id         VARCHAR PRIMARY KEY,
+            account_id VARCHAR NOT NULL,
+            user_id    VARCHAR NOT NULL,
+            action_type VARCHAR NOT NULL,
+            entity_type VARCHAR NOT NULL,
+            entity_id  VARCHAR NOT NULL,
+            status     VARCHAR DEFAULT 'completed',
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
     # ========== PERFORMANCE INDEXES ==========
     conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_account_date_platform ON campaign_metrics (account_id, date_from, platform)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_upload_id ON campaign_metrics (upload_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_upload_conflicts_upload_id ON upload_conflicts (upload_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_uploads_account_id ON uploads (account_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_client_config_account_id ON client_config (account_id)")
 
     conn.commit()
 
@@ -391,7 +423,7 @@ def create_tables(conn):
 def drop_all_tables(conn):
     """Drop all tables. Use only in dev/testing."""
     tables = [
-        "funnel_stages", "column_mappings", "upload_conflicts", "campaign_metrics",
+        "actions_log", "client_config", "funnel_stages", "column_mappings", "upload_conflicts", "campaign_metrics",
         "upload_versions", "uploads", "upload_history", "pmax_channels", "search_terms", "creatives",
         "placements", "demographics", "geo_data", "daily_metrics",
         "line_items", "insertion_orders", "ad_sets", "ad_groups",
