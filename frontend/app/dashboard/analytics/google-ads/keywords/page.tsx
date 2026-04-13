@@ -3,7 +3,7 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer } from "@/components";
-import { getSearchTerms } from "@/lib/mockData";
+import { fetchSearchTerms } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -11,11 +11,29 @@ export default function GoogleAdsKeywords() {
   const { selectedAccount } = useAccount();
   const pathname = usePathname();
   const [keywords, setKeywords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    setKeywords(getSearchTerms());
-  }, []);
+    const loadKeywords = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchSearchTerms(selectedAccount?.id);
+        setKeywords(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load keywords");
+        setKeywords([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedAccount?.id) {
+      loadKeywords();
+    }
+  }, [selectedAccount?.id]);
 
   const subNavItems = [
     { label: "Overview", href: "/dashboard/analytics/google-ads" },
@@ -58,7 +76,18 @@ export default function GoogleAdsKeywords() {
         ))}
       </div>
 
+      {/* Loading / Error States */}
+      {loading && (
+        <div className="text-center py-8 text-text-secondary">Loading keywords...</div>
+      )}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-4 text-red-400 mb-4">
+          Error: {error}
+        </div>
+      )}
+
       {/* Table */}
+      {!loading && !error && (
       <ChartContainer title="Keywords">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -128,6 +157,7 @@ export default function GoogleAdsKeywords() {
           </div>
         </div>
       </ChartContainer>
+      )}
     </div>
   );
 }
