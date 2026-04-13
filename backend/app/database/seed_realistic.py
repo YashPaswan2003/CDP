@@ -405,11 +405,19 @@ def seed_all(conn):
 
     # ── 1. ACCOUNTS ──
     print("  [1/10] Accounts...")
-    # Master agency account
-    conn.execute("""
-        INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent)
-        VALUES ('ethinos', 'Ethinos Digital (All Accounts)', 'Digital Agency', 'INR', 'web', 'google,dv360,meta', '#5C6BC0', '#4338CA', '#F59E0B')
-    """)
+    # Update master agency account (may already exist from seed.py)
+    existing = conn.execute("SELECT COUNT(*) FROM accounts WHERE id = 'ethinos'").fetchone()[0]
+    if existing:
+        conn.execute("""
+            UPDATE accounts SET name='Ethinos Digital (All Accounts)', industry='Digital Agency',
+            platforms='google,dv360,meta', brand_primary='#5C6BC0', brand_secondary='#4338CA', brand_accent='#F59E0B'
+            WHERE id = 'ethinos'
+        """)
+    else:
+        conn.execute("""
+            INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent)
+            VALUES ('ethinos', 'Ethinos Digital (All Accounts)', 'Digital Agency', 'INR', 'web', 'google,dv360,meta', '#5C6BC0', '#4338CA', '#F59E0B')
+        """)
     for client in CLIENTS:
         conn.execute("""
             INSERT INTO accounts (id, name, industry, currency, client_type, platforms, brand_primary, brand_secondary, brand_accent)
