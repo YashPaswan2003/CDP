@@ -426,6 +426,18 @@ def seed_all(conn):
               client["client_type"], client["platforms"], client["brand_primary"],
               client["brand_secondary"], client["brand_accent"]])
 
+    # ── 1b. USER_ACCOUNTS (link admin to new clients) ──
+    print("  [1b/10] Linking users to new accounts...")
+    for client in CLIENTS:
+        try:
+            conn.execute("INSERT INTO user_accounts (user_id, account_id) VALUES ('user-001', ?)", [client["id"]])
+        except Exception:
+            pass  # Already linked
+        try:
+            conn.execute("INSERT INTO user_accounts (user_id, account_id) VALUES ('user-002', ?)", [client["id"]])
+        except Exception:
+            pass  # Already linked
+
     # ── 2. CLIENT CONFIG ──
     print("  [2/10] Client configs...")
     for client in CLIENTS:
