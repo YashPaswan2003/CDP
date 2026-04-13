@@ -56,7 +56,7 @@ export function HealthDot({ current, previous, size = "md", showTooltip = true }
     error: "bg-accent-error",
     warning: "bg-accent-warning",
     success: "bg-accent-success",
-    "no-data": "bg-gray-300",
+    "no-data": "bg-gray-500",
   };
 
   const tooltipMap = {

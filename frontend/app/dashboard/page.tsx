@@ -691,8 +691,8 @@ export default function PortfolioPage() {
                 onClick={() => setTrendDays(days)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   trendDays === days
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-700 text-gray-400"
                 }`}
               >
                 {days}D
@@ -711,8 +711,8 @@ export default function PortfolioPage() {
               onClick={() => setTrendStage(stage)}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 trendStage === stage
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-700 text-gray-400"
               }`}
             >
               {stage === "all" ? "All Stages" : stage.toUpperCase()}
@@ -730,8 +730,8 @@ export default function PortfolioPage() {
               onClick={() => setTrendPlatform(platform)}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 trendPlatform === platform
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-700 text-gray-400"
               }`}
             >
               {platform === "all" ? "All Platforms" : platform === "dv360" ? "DV360" : platform.charAt(0).toUpperCase() + platform.slice(1)}
@@ -753,8 +753,8 @@ export default function PortfolioPage() {
               }}
               className={`px-3 py-1 rounded text-sm font-medium transition-all ${
                 trendMetrics.includes(metric)
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-700 text-gray-400"
               }`}
             >
               {metric.charAt(0).toUpperCase() + metric.slice(1)}

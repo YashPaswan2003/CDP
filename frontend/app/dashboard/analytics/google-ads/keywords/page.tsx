@@ -3,7 +3,8 @@
 import { useAccount } from "@/lib/accountContext";
 import { usePathname } from "next/navigation";
 import { ChartContainer } from "@/components";
-import { fetchSearchTerms } from "@/lib/api";
+import { FlagBanner } from "@/components/FlagBanner";
+import { fetchSearchTerms, getFlags } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -11,6 +12,7 @@ export default function GoogleAdsKeywords() {
   const { selectedAccount } = useAccount();
   const pathname = usePathname();
   const [keywords, setKeywords] = useState<any[]>([]);
+  const [flags, setFlags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -22,6 +24,14 @@ export default function GoogleAdsKeywords() {
         setError(null);
         const data = await fetchSearchTerms(selectedAccount?.id);
         setKeywords(data);
+
+        // Load page-level flags
+        const flagsResponse = await getFlags(selectedAccount?.id || "");
+        // Filter flags relevant to keywords (e.g., zero conversions)
+        const keywordFlags = flagsResponse.flags.filter((f: any) =>
+          f.metric === "conversions" || f.metric === "ctr" || f.metric === "quality_score"
+        );
+        setFlags(keywordFlags.slice(0, 2)); // Show max 2 flags on page
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load keywords");
         setKeywords([]);
@@ -83,6 +93,21 @@ export default function GoogleAdsKeywords() {
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded p-4 text-red-400 mb-4">
           Error: {error}
+        </div>
+      )}
+
+      {/* Flags */}
+      {!loading && !error && flags.length > 0 && (
+        <div className="space-y-3">
+          {flags.map((flag) => (
+            <FlagBanner
+              key={flag.metric}
+              {...flag}
+              onAction={(action) => {
+                console.log(`Action: ${action.label} for keyword flag: ${flag.metric}`);
+              }}
+            />
+          ))}
         </div>
       )}
 

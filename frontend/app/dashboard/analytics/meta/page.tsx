@@ -60,12 +60,16 @@ export default function MetaAnalytics() {
   useEffect(() => {
     const campaignParam = searchParams.get("campaign");
     const highlightParam = searchParams.get("highlight");
+    const dateFromParam = searchParams.get("date_from");
+    const dateToParam = searchParams.get("date_to");
     if (campaignParam) setCampaignFilter(campaignParam);
     if (highlightParam) {
       setSelectedMetrics((prev) =>
         prev.includes(highlightParam) ? prev : [...prev, highlightParam]
       );
     }
+    if (dateFromParam) setDateFrom(dateFromParam);
+    if (dateToParam) setDateTo(dateToParam);
   }, [searchParams]);
 
   useEffect(() => {
@@ -77,13 +81,14 @@ export default function MetaAnalytics() {
       setDailyMetrics(metrics);
       setCampaigns(camps);
 
-      if (metrics.length > 0) {
+      if (metrics.length > 0 && !dateFrom && !dateTo) {
         const dates = metrics.map((m: any) => m.date).sort();
         setDateFrom(dates[0]);
         setDateTo(dates[dates.length - 1]);
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount?.id]);
 
   const metaMetrics = dailyMetrics.filter((m) => {
@@ -330,6 +335,8 @@ export default function MetaAnalytics() {
                   { field: "impressions" as SortField, label: "Impr.", align: "right" },
                   { field: "clicks" as SortField, label: "Clicks", align: "right" },
                   { field: "ctr" as SortField, label: "CTR", align: "right" },
+                  { field: "cpc" as SortField, label: "CPC", align: "right" },
+                  { field: "cvr" as SortField, label: "CVR", align: "right" },
                   { field: "conversions" as SortField, label: "Conv.", align: "right" },
                   { field: "revenue" as SortField, label: "Revenue", align: "right" },
                   { field: "roas" as SortField, label: "ROAS", align: "right" },
@@ -365,6 +372,8 @@ export default function MetaAnalytics() {
                     <td className="px-3 py-3 text-right text-text-primary">{c.impressions.toLocaleString()}</td>
                     <td className="px-3 py-3 text-right text-text-primary">{c.clicks.toLocaleString()}</td>
                     <td className="px-3 py-3 text-right text-text-primary">{(c.ctr * 100).toFixed(2)}%</td>
+                    <td className="px-3 py-3 text-right text-text-primary">{formatCurrency(c.clicks > 0 ? c.spent / c.clicks : 0, selectedAccount?.currency)}</td>
+                    <td className="px-3 py-3 text-right text-text-primary">{c.clicks > 0 ? ((c.conversions / c.clicks) * 100).toFixed(2) : "0.00"}%</td>
                     <td className="px-3 py-3 text-right text-text-primary">{c.conversions.toLocaleString()}</td>
                     <td className="px-3 py-3 text-right text-text-primary">{formatCurrency(c.revenue, selectedAccount?.currency)}</td>
                     <td className="px-3 py-3 text-right">
@@ -376,7 +385,7 @@ export default function MetaAnalytics() {
                 );
               })}
               {paginatedCampaigns.length === 0 && (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-text-secondary">No campaigns found</td></tr>
+                <tr><td colSpan={14} className="px-3 py-8 text-center text-text-secondary">No campaigns found</td></tr>
               )}
             </tbody>
           </table>

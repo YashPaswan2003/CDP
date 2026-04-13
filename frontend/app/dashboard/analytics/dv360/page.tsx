@@ -35,9 +35,11 @@ interface IOData {
   ctr: number;
   cpc: number;
   cvr: number;
+  revenue: number;
+  roas: number;
 }
 
-type SortField = "name" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "views" | "vtr" | "cpv";
+type SortField = "name" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "revenue" | "roas" | "views" | "vtr" | "cpv";
 
 export default function DV360Analytics() {
   const { selectedAccount } = useAccount();
@@ -59,12 +61,16 @@ export default function DV360Analytics() {
   useEffect(() => {
     const campaignParam = searchParams.get("campaign");
     const highlightParam = searchParams.get("highlight");
+    const dateFromParam = searchParams.get("date_from");
+    const dateToParam = searchParams.get("date_to");
     if (campaignParam) setCampaignFilter(campaignParam);
     if (highlightParam) {
       setSelectedMetrics((prev) =>
         prev.includes(highlightParam) ? prev : [...prev, highlightParam]
       );
     }
+    if (dateFromParam) setDateFrom(dateFromParam);
+    if (dateToParam) setDateTo(dateToParam);
   }, [searchParams]);
 
   useEffect(() => {
@@ -78,13 +84,14 @@ export default function DV360Analytics() {
       setCampaigns(camps);
       setInsertionOrders(ios);
 
-      if (metrics.length > 0) {
+      if (metrics.length > 0 && !dateFrom && !dateTo) {
         const dates = metrics.map((m: any) => m.date).sort();
         setDateFrom(dates[0]);
         setDateTo(dates[dates.length - 1]);
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount?.id]);
 
   const dv360Metrics = dailyMetrics.filter((m) => {
@@ -166,6 +173,8 @@ export default function DV360Analytics() {
       ctr: c.ctr || 0,
       cpc: c.cpc || 0,
       cvr: c.cvr || 0,
+      revenue: c.revenue || 0,
+      roas: c.revenue && c.spent ? c.revenue / c.spent : 0,
     }));
   }, [insertionOrders, campaigns]);
 
@@ -342,6 +351,10 @@ export default function DV360Analytics() {
                   { field: "vtr" as SortField, label: "VTR", align: "right" },
                   { field: "cpv" as SortField, label: "CPV", align: "right" },
                   { field: "conversions" as SortField, label: "Conv.", align: "right" },
+                  { field: "cpc" as SortField, label: "CPC", align: "right" },
+                  { field: "cvr" as SortField, label: "CVR", align: "right" },
+                  { field: "revenue" as SortField, label: "Revenue", align: "right" },
+                  { field: "roas" as SortField, label: "ROAS", align: "right" },
                 ] as const).map((col) => (
                   <th key={col.field} onClick={() => handleSort(col.field)}
                     className={`px-3 py-3 font-medium text-text-secondary cursor-pointer hover:text-text-primary select-none whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}>
@@ -381,11 +394,19 @@ export default function DV360Analytics() {
                     <td className="px-3 py-3 text-right text-text-primary">{((row.vtr || 0) * 100).toFixed(2)}%</td>
                     <td className="px-3 py-3 text-right text-text-primary">{formatCurrency(row.cpv || 0, selectedAccount?.currency)}</td>
                     <td className="px-3 py-3 text-right text-text-primary">{row.conversions.toLocaleString()}</td>
+                    <td className="px-3 py-3 text-right text-text-primary">{formatCurrency(row.clicks > 0 ? row.spent / row.clicks : 0, selectedAccount?.currency)}</td>
+                    <td className="px-3 py-3 text-right text-text-primary">{row.clicks > 0 ? ((row.conversions / row.clicks) * 100).toFixed(2) : "0.00"}%</td>
+                    <td className="px-3 py-3 text-right text-text-primary">{formatCurrency(row.revenue, selectedAccount?.currency)}</td>
+                    <td className="px-3 py-3 text-right">
+                      <span className={`font-semibold ${row.roas >= 3 ? "text-emerald-400" : row.roas >= 1.5 ? "text-amber-400" : "text-red-400"}`}>
+                        {row.roas.toFixed(2)}x
+                      </span>
+                    </td>
                   </tr>
                 );
               })}
               {paginatedData.length === 0 && (
-                <tr><td colSpan={11} className="px-3 py-8 text-center text-text-secondary">No data found</td></tr>
+                <tr><td colSpan={15} className="px-3 py-8 text-center text-text-secondary">No data found</td></tr>
               )}
             </tbody>
           </table>
