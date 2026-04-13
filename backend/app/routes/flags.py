@@ -80,6 +80,18 @@ def detect_flags(
         if not campaigns_result:
             return FlagsResponse(flags=[], severity_distribution={})
 
+        # Build name lookup for richer flag messages
+        campaign_names = {}
+        campaign_platforms = {}
+        for row in campaigns_result:
+            cid = row[0]
+            campaign_names[cid] = row[1]
+            campaign_platforms[cid] = row[2]
+
+        # Get account/client name
+        client_name_row = conn.execute("SELECT name FROM accounts WHERE id = ?", [account_id]).fetchone()
+        client_name = client_name_row[0] if client_name_row else account_id
+
         # Flag 1: ROAS drop > 20%
         for row in campaigns_result:
             campaign_id, name, platform, roas, previous_roas, ctr, budget, spent, frequency, status = row
@@ -89,14 +101,18 @@ def detect_flags(
             if roas is not None and previous_roas is not None and previous_roas > 0:
                 roas_drop_pct = ((previous_roas - roas) / previous_roas) * 100
                 if roas_drop_pct > 20:  # 20% drop
+                    spent_val = float(spent) if spent else 0
                     flags.append(Flag(
                         metric="roas",
                         current=roas,
                         previous=previous_roas,
-                        entities=[campaign_id],
+                        entities=[name or campaign_id],
                         entity_count=1,
                         severity="high",
-                        explanation=f"ROAS dropped {roas_drop_pct:.1f}% ({roas:.2f} vs {previous_roas:.2f}). May indicate audience saturation or quality issues.",
+                        explanation=f"ROAS dropped {roas_drop_pct:.1f}% on {client_name} \"{name}\" ({platform.title()}) — {roas:.2f}x vs {previous_roas:.2f}x. Spend: {'${:,.0f}'.format(spent_val)}.",
+                        campaign_name=name,
+                        client_name=client_name,
+                        platform=platform,
                         actions=[
                             Action(type="pause", label="Pause campaign", severity="high"),
                             Action(type="review_quality", label="Review quality score", severity="medium"),
@@ -115,12 +131,16 @@ def detect_flags(
                 zero_conv_campaigns.append(campaign_id)
 
         if zero_conv_campaigns:
+            names = [campaign_names.get(c, c) for c in zero_conv_campaigns[:3]]
             flags.append(Flag(
                 metric="conversions",
-                entities=zero_conv_campaigns,
+                entities=[campaign_names.get(c, c) for c in zero_conv_campaigns],
                 entity_count=len(zero_conv_campaigns),
                 severity="high",
-                explanation=f"{len(zero_conv_campaigns)} campaign(s) have spend but zero conversions. Check tracking setup or landing page experience.",
+                explanation=f"{len(zero_conv_campaigns)} campaign(s) on {client_name} have spend but zero conversions: {', '.join(names)}. Check tracking or landing pages.",
+                campaign_name=names[0] if names else None,
+                client_name=client_name,
+                platform=campaign_platforms.get(zero_conv_campaigns[0]),
                 actions=[
                     Action(type="pause", label="Pause campaigns", severity="high"),
                     Action(type="review_quality", label="Check tracking", severity="medium"),
@@ -132,16 +152,19 @@ def detect_flags(
         for row in campaigns_result:
             campaign_id, name, platform, roas, previous_roas, ctr, budget, spent, frequency, status = row
             frequency = float(frequency) if frequency else 0
-            if platform.lower() == 'meta' and frequency > config['frequency_threshold']:
+            if platform.lower() in ('meta', 'dv360') and frequency > config['frequency_threshold']:
                 flags.append(Flag(
                     metric="frequency",
                     current=frequency,
-                    entities=[campaign_id],
+                    entities=[name or campaign_id],
                     entity_count=1,
                     severity="medium",
-                    explanation=f"Meta frequency at {frequency:.2f}x (threshold: {config['frequency_threshold']}). Risk of audience fatigue and ad blindness.",
+                    explanation=f"Frequency {frequency:.1f}x on {client_name} \"{name}\" ({platform.title()}) — threshold {config['frequency_threshold']}x. Audience fatigue risk.",
+                    campaign_name=name,
+                    client_name=client_name,
+                    platform=platform,
                     actions=[
-                        Action(type="adjust_bid", label="Increase budget for expansion", severity="medium"),
+                        Action(type="adjust_bid", label="Expand audience", severity="medium"),
                         Action(type="details", label="View audience overlap", severity="low"),
                     ]
                 ))
@@ -157,16 +180,19 @@ def detect_flags(
                 # Flag if pace < 80% or > 120% of expected (assuming linear pace)
                 target_pace = config['spend_pace_pct']
                 if pace_pct < (target_pace - 20) or pace_pct > (target_pace + 20):
-                    severity = "medium" if pace_pct < 70 else "low"
+                    severity = "medium" if pace_pct < 70 or pace_pct > 130 else "low"
+                    pace_msg = "underspending" if pace_pct < 80 else "overspending"
                     flags.append(Flag(
                         metric="spend_pace",
                         current=pace_pct,
                         previous=target_pace,
-                        entities=[campaign_id],
+                        entities=[name or campaign_id],
                         entity_count=1,
                         severity=severity,
-                        explanation=f"Campaign pacing at {pace_pct:.0f}% of budget (target: {target_pace:.0f}%). " +
-                                    ("Spending too slowly - likely underbidding." if pace_pct < 80 else "Spending ahead of pace - monitor burn rate."),
+                        explanation=f"{client_name} \"{name}\" ({platform.title()}) at {pace_pct:.0f}% budget pace — {pace_msg}.",
+                        campaign_name=name,
+                        client_name=client_name,
+                        platform=platform,
                         actions=[
                             Action(type="adjust_bid", label="Adjust bid strategy", severity="high"),
                             Action(type="details", label="View pacing details", severity="low"),
@@ -183,14 +209,18 @@ def detect_flags(
             if ctr is not None and ctr < 0.02:  # CTR below 2% is concerning
                 ctr_flags.append((campaign_id, name, ctr))
 
-        if ctr_flags and len(ctr_flags) <= 3:
+        if ctr_flags:
+            names = [c[1] for c in ctr_flags[:3]]
             flags.append(Flag(
                 metric="ctr",
                 current=ctr_flags[0][2] if ctr_flags else None,
-                entities=[c[0] for c in ctr_flags],
+                entities=[c[1] for c in ctr_flags],
                 entity_count=len(ctr_flags),
                 severity="medium",
-                explanation=f"{len(ctr_flags)} campaign(s) have low CTR (<2%). Check ad copy, targeting, or landing page relevance.",
+                explanation=f"{len(ctr_flags)} campaign(s) on {client_name} have low CTR (<2%): {', '.join(names)}. Review ad copy and targeting.",
+                campaign_name=ctr_flags[0][1] if ctr_flags else None,
+                client_name=client_name,
+                platform=campaign_platforms.get(ctr_flags[0][0]) if ctr_flags else None,
                 actions=[
                     Action(type="review_quality", label="Review ad creatives", severity="medium"),
                     Action(type="details", label="View keyword QS", severity="low"),

@@ -15,15 +15,20 @@ class InsightsAgent(BaseAgent):
 
         Args:
             account_id: Account ID
-            context: Optional context dict with campaigns, metrics, flags, config
+            context: Optional context dict with account_name, campaigns, metrics, flags, config
         """
         super().__init__(account_id)
         self.context = context or {}
+        self.account_name = self.context.get("account_name", account_id)
         self._build_context_aware_prompt()
 
     def _build_context_aware_prompt(self):
         """Build system prompt with context about account metrics."""
         base_prompt = self.system_prompt
+
+        # Add account name to prompt
+        if self.account_name and self.account_name != self.account_id:
+            base_prompt += f"\n\nYou are analyzing data for: {self.account_name}"
 
         # Add context about current campaigns if available
         if self.context.get("campaigns"):
@@ -48,11 +53,16 @@ class InsightsAgent(BaseAgent):
             return "No campaigns available"
 
         lines = []
-        for camp in campaigns[:5]:  # Limit to 5 campaigns for context window
+        for camp in campaigns[:10]:  # Include more campaigns for richer context
+            platform = camp.get('platform', 'unknown')
+            status = camp.get('status', 'unknown')
             lines.append(
-                f"- {camp.get('name', 'Unknown')}: "
+                f"- {camp.get('name', 'Unknown')} [{platform}] ({status}): "
                 f"${camp.get('spent', 0):.2f} spend, "
-                f"ROAS {camp.get('roas', 0):.2f}x"
+                f"${camp.get('revenue', 0):.2f} revenue, "
+                f"ROAS {camp.get('roas', 0):.2f}x, "
+                f"{camp.get('clicks', 0)} clicks, "
+                f"{camp.get('conversions', 0)} conversions"
             )
         return "\n".join(lines)
 

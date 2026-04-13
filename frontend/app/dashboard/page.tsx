@@ -12,10 +12,9 @@ import { RecommendationPanel, type Recommendation } from "@/components/ai/Recomm
 import { getMockRecommendations } from "@/lib/mockData";
 import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
 import { MonitorDiagnoseAct } from "@/components/MonitorDiagnoseAct";
-import { ConfigSetupModal } from "@/components/ConfigSetupModal";
 import { getConfig } from "@/lib/api";
-import { ChevronDown } from "lucide-react";
-import { buildCampaignDeepLink } from "@/lib/analytics";
+import { ChevronDown, Settings, TrendingUp, TrendingDown } from "lucide-react";
+import Link from "next/link";
 
 interface PlatformMetrics {
   platform: "google" | "dv360" | "meta";
@@ -80,15 +79,33 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, current, previous }: MetricCardProps) {
+  // Calculate change percentage
+  const hasChange = current !== undefined && previous !== undefined && previous > 0;
+  const changePct = hasChange ? ((current! - previous!) / previous!) * 100 : 0;
+  const isPositive = changePct >= 0;
+  const changeColor = Math.abs(changePct) < 10 ? "text-accent-success" : isPositive ? "text-accent-success" : changePct < -20 ? "text-accent-error" : "text-accent-warning";
+
   return (
-    <div className="bg-white border border-gray-100 shadow-sm rounded-xl p-4 space-y-1 min-w-0">
+    <div className="bg-surface-elevated border border-border-primary shadow-sm rounded-xl p-4 space-y-1 min-w-0">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium truncate flex-1">{label}</p>
+        <p className="text-xs text-text-secondary uppercase tracking-wide font-medium truncate flex-1">{label}</p>
         {current !== undefined && previous !== undefined && (
           <HealthDot current={current} previous={previous} size="sm" showTooltip={true} />
         )}
       </div>
-      <p className="text-xl font-bold text-gray-900 truncate">{value}</p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-xl font-bold text-text-primary truncate">{value}</p>
+        {hasChange && Math.abs(changePct) > 0.5 && (
+          <span className={`text-xs font-semibold flex items-center gap-0.5 ${changeColor}`}>
+            {isPositive ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
+            {isPositive ? "+" : ""}{changePct.toFixed(0)}%
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -130,73 +147,7 @@ function PlatformSubCard({
   );
 }
 
-const stageConfig = {
-  tofu: {
-    color: "var(--client-primary)",
-    hex: BRAND_FALLBACKS.primary,
-    label: "🎯 Top of Funnel",
-    title: "Awareness",
-    description: "Audience reach and impressions",
-  },
-  mofu: {
-    color: "var(--client-secondary)",
-    hex: BRAND_FALLBACKS.secondary,
-    label: "🔄 Middle of Funnel",
-    title: "Consideration",
-    description: "Clicks and engagement",
-  },
-  bofu: {
-    color: "var(--client-accent)",
-    hex: BRAND_FALLBACKS.accent,
-    label: "🎬 Bottom of Funnel",
-    title: "Conversion",
-    description: "Conversions and revenue",
-  },
-};
 
-function FunnelPipeline() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.1 }}
-      className="flex items-center justify-between py-8 px-4 bg-white rounded-xl border border-gray-200 shadow-sm"
-    >
-      {Object.entries(stageConfig).map(([stage, config], idx) => (
-        <div key={stage} className="flex items-center flex-1">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2 + idx * 0.1 }}
-            className="flex flex-col items-center text-center"
-          >
-            <div
-              style={{ backgroundColor: config.hex }}
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-2"
-            >
-              {idx + 1}
-            </div>
-            <p className="text-sm font-semibold text-gray-900">{config.title}</p>
-            <p className="text-xs text-gray-500 mt-1">{config.description}</p>
-          </motion.div>
-
-          {idx < 2 && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.3 + idx * 0.1 }}
-              className="flex-1 h-1 mx-4"
-              style={{
-                background: `linear-gradient(to right, ${config.hex}, ${Object.values(stageConfig)[idx + 1].hex})`,
-                transformOrigin: "left",
-              }}
-            />
-          )}
-        </div>
-      ))}
-    </motion.div>
-  );
-}
 
 function FunnelSection({
   title,
@@ -235,17 +186,17 @@ function FunnelSection({
     }
   };
 
-  // Build analyze URLs for each platform
+  // Build analyze URLs for each platform with stage context
   const getAnalyzeUrl = (platformId: "google" | "dv360" | "meta") => {
-    return buildCampaignDeepLink(
-      platformId,
-      "All Campaigns",
-      {
-        accountId: selectedAccount?.id,
-        dateFrom: monthFrom,
-        dateTo: monthTo,
-      }
-    );
+    const basePath = platformId === "google" ? "/dashboard/analytics/google-ads" :
+                     platformId === "dv360" ? "/dashboard/analytics/dv360" :
+                     "/dashboard/analytics/meta";
+    const params = new URLSearchParams();
+    params.set("stage", stage);
+    if (selectedAccount?.id) params.set("account_id", selectedAccount.id);
+    if (monthFrom) params.set("date_from", monthFrom);
+    if (monthTo) params.set("date_to", monthTo);
+    return `${basePath}?${params.toString()}`;
   };
 
   return (
@@ -330,8 +281,7 @@ export default function PortfolioPage() {
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [showConfigSetup, setShowConfigSetup] = useState(false);
-  const [configChecked, setConfigChecked] = useState(false);
+  const [configNeeded, setConfigNeeded] = useState(false);
 
   // Month filter state
   const [selectedMonth, setSelectedMonth] = useState({ month: 4, year: 2026 }); // April 2026
@@ -358,12 +308,9 @@ export default function PortfolioPage() {
       if (!selectedAccount?.id) return;
       try {
         const config = await getConfig(selectedAccount.id);
-        if (!config.is_configured) {
-          setShowConfigSetup(true);
-        }
-        setConfigChecked(true);
-      } catch (err) {
-        setConfigChecked(true);
+        setConfigNeeded(!config.is_configured);
+      } catch {
+        setConfigNeeded(false);
       }
     };
     checkConfig();
@@ -569,11 +516,12 @@ export default function PortfolioPage() {
   const trendDateFrom = dateFromTime.toISOString().split("T")[0]; // YYYY-MM-DD
   const trendDateTo = today.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  // Filter daily metrics by trend days and platform
+  // Filter daily metrics by trend days, platform, and stage
   const filteredDailyMetrics = dailyMetrics.filter((m: any) => {
     const inRange = m.date >= trendDateFrom && m.date <= trendDateTo;
     const inPlatform = trendPlatform === "all" || m.platform === trendPlatform;
-    return inRange && inPlatform;
+    const inStage = trendStage === "all" || m.funnel_stage === trendStage;
+    return inRange && inPlatform && inStage;
   });
 
   // Handle alert dismissal
@@ -588,6 +536,18 @@ export default function PortfolioPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+      {/* Config Banner */}
+      {configNeeded && (
+        <Link
+          href="/dashboard/settings"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-elevated border border-border-primary text-text-secondary text-sm hover:bg-blue-950/30 transition-colors"
+        >
+          <Settings className="w-4 h-4 text-primary-500" />
+          <span>Configure thresholds for <strong className="text-text-primary">{selectedAccount?.name || "this client"}</strong></span>
+          <span className="ml-auto text-primary-500 font-medium">Settings &rarr;</span>
+        </Link>
+      )}
+
       {/* Alerts Strip */}
       <AlertStrip
         alerts={alerts}
@@ -673,9 +633,6 @@ export default function PortfolioPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* Funnel Pipeline */}
-      <FunnelPipeline />
 
       {/* TOFU Section */}
       <FunnelSection
@@ -784,7 +741,7 @@ export default function PortfolioPage() {
 
         {/* Metric Selector */}
         <motion.div className="flex gap-2 flex-wrap">
-          {["spend", "revenue", "impressions", "clicks", "conversions"].map((metric) => (
+          {["spend", "revenue", "impressions", "clicks", "conversions", "roas", "ctr", "cpc", "cpa"].map((metric) => (
             <motion.button
               key={metric}
               whileHover={{ scale: 1.05 }}
@@ -816,6 +773,10 @@ export default function PortfolioPage() {
                 { key: "impressions", name: "Impressions", color: "#F79009" },
                 { key: "clicks", name: "Clicks", color: "#8B5CF6" },
                 { key: "conversions", name: "Conversions", color: "#EC4899" },
+                { key: "roas", name: "ROAS", color: "#06B6D4" },
+                { key: "ctr", name: "CTR", color: "#F43F5E" },
+                { key: "cpc", name: "CPC", color: "#A855F7" },
+                { key: "cpa", name: "CPA", color: "#EAB308" },
               ].filter((dk) => trendMetrics.includes(dk.key))}
               height={300}
             />
@@ -834,16 +795,6 @@ export default function PortfolioPage() {
         dateTo={monthTo}
       />
 
-      {/* Config Setup Modal */}
-      <ConfigSetupModal
-        accountId={selectedAccount?.id || ""}
-        isOpen={showConfigSetup && configChecked}
-        onClose={() => setShowConfigSetup(false)}
-        onComplete={() => {
-          setShowConfigSetup(false);
-          setConfigChecked(false);
-        }}
-      />
     </motion.div>
   );
 }

@@ -420,7 +420,44 @@ export const dashboardAPI = {
   },
 };
 
-// ========== ALERTS ==========
+// ========== ALERTS (via /api/flags) ==========
+
+/**
+ * Transform a flag object from /api/flags into an Alert for the AlertStrip.
+ */
+function flagToAlert(flag: any, idx: number): any {
+  const severityMap: Record<string, string> = { high: 'error', medium: 'warning', low: 'success' };
+  const severity = severityMap[flag.severity] || 'warning';
+
+  // Build headline from flag data
+  const metricLabel = (flag.metric || 'metric').toUpperCase();
+  const changePct = flag.current !== undefined && flag.previous !== undefined && flag.previous > 0
+    ? Math.round(((flag.current - flag.previous) / flag.previous) * 100)
+    : null;
+  const campaignName = flag.campaign_name || (flag.entities?.[0] || '');
+  const platformName = flag.platform || '';
+  const headline = changePct !== null
+    ? `${metricLabel} ${changePct > 0 ? 'up' : 'dropped'} ${Math.abs(changePct)}%${campaignName ? ` on ${campaignName}` : ''}${platformName ? ` (${platformName})` : ''}`
+    : flag.explanation || `${metricLabel} alert`;
+
+  // Build context line
+  const contextParts: string[] = [];
+  if (campaignName) contextParts.push(`Campaign: ${campaignName}`);
+  if (flag.current !== undefined) contextParts.push(`Current: ${flag.current}`);
+  if (flag.previous !== undefined) contextParts.push(`Previous: ${flag.previous}`);
+  if (flag.entity_count > 1) contextParts.push(`${flag.entity_count} entities affected`);
+
+  return {
+    id: `flag_${idx}_${flag.metric || 'unknown'}`,
+    severity,
+    headline,
+    context: contextParts.length > 0 ? contextParts.join(' | ') : undefined,
+    campaign: campaignName,
+    platform: platformName,
+    metric: flag.metric,
+  };
+}
+
 export async function fetchAlerts(filters?: {
   account_id?: string;
   date_from?: string;
@@ -428,45 +465,52 @@ export async function fetchAlerts(filters?: {
 }): Promise<any[]> {
   const params = new URLSearchParams();
   if (filters?.account_id) params.append('account_id', filters.account_id);
-  if (filters?.date_from) params.append('date_from', filters.date_from);
-  if (filters?.date_to) params.append('date_to', filters.date_to);
 
   const query = params.toString() ? `?${params.toString()}` : '';
 
   return fetchWithFallback(
-    `/api/alerts${query}`,
-    () => {
-      // Mock alerts for demo
-      return {
-        alerts: [
-          {
-            id: 'alert_roas_demo',
-            severity: 'error',
-            message: 'ROAS dropped 40% vs last week on Google (Summer Sale)',
-            campaign: 'Summer Sale',
-            platform: 'google',
-            targetPage: '/dashboard/analytics/google-ads?campaign=Summer+Sale',
-          },
-          {
-            id: 'alert_freq_demo',
-            severity: 'warning',
-            message: 'Meta frequency >5x — audience fatigue risk',
-            campaign: 'Retargeting 2026',
-            platform: 'meta',
-            targetPage: '/dashboard/analytics/meta?campaign=Retargeting+2026',
-          },
-          {
-            id: 'alert_budget_demo',
-            severity: 'success',
-            message: 'DV360 on track — 98% budget utilization',
-            campaign: 'DV360 Q2',
-            platform: 'dv360',
-            targetPage: '/dashboard/analytics/dv360?campaign=DV360+Q2',
-          },
-        ],
-      };
-    },
-  ).then((res: any) => res.alerts || []);
+    `/api/flags${query}`,
+    () => ({
+      flags: [
+        {
+          metric: "roas",
+          current: 1.8,
+          previous: 3.1,
+          campaign_name: "Summer Sale",
+          platform: "google",
+          entities: ["camp_001"],
+          entity_count: 1,
+          severity: "high",
+          explanation: "ROAS dropped 42% (1.80 vs 3.10). May indicate audience saturation.",
+        },
+        {
+          metric: "frequency",
+          current: 5.8,
+          previous: 3.2,
+          campaign_name: "Retargeting 2026",
+          platform: "meta",
+          entities: ["camp_002"],
+          entity_count: 1,
+          severity: "medium",
+          explanation: "Frequency at 5.80x — audience fatigue risk.",
+        },
+        {
+          metric: "spend_pace",
+          current: 98,
+          previous: 100,
+          campaign_name: "DV360 Q2 Programmatic",
+          platform: "dv360",
+          entities: ["camp_003"],
+          entity_count: 1,
+          severity: "low",
+          explanation: "Budget utilization at 98% — on track.",
+        },
+      ],
+    }),
+  ).then((res: any) => {
+    const flags = res.flags || [];
+    return flags.map((flag: any, idx: number) => flagToAlert(flag, idx));
+  });
 }
 
 // ========== FLAGS (MONITOR/DIAGNOSE/ACT) ==========
@@ -581,43 +625,61 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  sendMessage: async (clientId: string, messages: any[]) => {
-    return fetchWithFallback(
-      `/api/chat`,
+  sendMessage: async (accountId: string, messages: any[]): Promise<{ message: string; tokens_used: number; client_id: string }> => {
+    const result = await fetchWithFallback(
+      `/chat/?account_id=${encodeURIComponent(accountId)}`,
       () => ({
-        data: { message: "Mock response from Claude about your campaigns" },
+        message: `Here's a quick overview of your account performance. Based on the data I can see, your campaigns are running across multiple platforms. Would you like me to dive deeper into any specific campaign or metric?`,
+        tokens_used: 0,
+        client_id: accountId,
       }),
       {
         method: "POST",
         body: JSON.stringify({
-          client_id: clientId,
-          messages: messages,
+          client_id: accountId,
+          messages: messages.map((m: any) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       },
     );
+    // Normalize response shape
+    if (result && typeof result === 'object') {
+      if ('data' in result && (result as any).data?.message) {
+        return (result as any).data;
+      }
+      if ('message' in result) {
+        return result as { message: string; tokens_used: number; client_id: string };
+      }
+    }
+    return { message: "No response received.", tokens_used: 0, client_id: accountId };
   },
+
   sendMessageWithContext: async (
-    message: string,
+    accountId: string,
+    messages: Array<{ role: string; content: string }>,
     context: {
-      account_id: string;
-      page: string;
-      date_from?: string;
-      date_to?: string;
+      campaign?: string;
+      platform?: string;
+      metric?: string;
+      dateFrom?: string;
+      dateTo?: string;
     },
-  ) => {
-    return fetchWithFallback(
-      `/api/chat`,
-      () => ({
-        response: "Mock response from Claude about your campaigns",
-      }),
-      {
-        method: "POST",
-        body: JSON.stringify({
-          message: message,
-          context: context,
-        }),
-      },
-    );
+  ): Promise<{ message: string; tokens_used: number; client_id: string }> => {
+    // Prepend context as a system-like user message
+    const contextParts: string[] = [];
+    if (context.campaign) contextParts.push(`Campaign: ${context.campaign}`);
+    if (context.platform) contextParts.push(`Platform: ${context.platform}`);
+    if (context.metric) contextParts.push(`Focus metric: ${context.metric}`);
+    if (context.dateFrom) contextParts.push(`Date range: ${context.dateFrom} to ${context.dateTo || 'now'}`);
+
+    const contextMessage = contextParts.length > 0
+      ? [{ role: "user", content: `[Context] I'm looking at: ${contextParts.join(', ')}` }]
+      : [];
+
+    const allMessages = [...contextMessage, ...messages];
+    return chatAPI.sendMessage(accountId, allMessages);
   },
 };
 

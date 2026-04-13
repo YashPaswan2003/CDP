@@ -72,6 +72,7 @@ def create_tables(conn):
             previous_roas DECIMAL(8,4),
             reach       BIGINT,
             frequency   DECIMAL(8,4),
+            funnel_stage VARCHAR(10),
             created_at  TIMESTAMP DEFAULT NOW()
         )
     """)
@@ -155,6 +156,11 @@ def create_tables(conn):
             conversions INTEGER,
             revenue     DECIMAL(15,2),
             views       BIGINT DEFAULT 0,
+            reach       BIGINT DEFAULT 0,
+            frequency   DECIMAL(8,4) DEFAULT 0,
+            cpm         DECIMAL(10,4) DEFAULT 0,
+            cpa         DECIMAL(10,2) DEFAULT 0,
+            vtr         DECIMAL(8,4) DEFAULT 0,
             UNIQUE (campaign_id, date)
         )
     """)
@@ -410,6 +416,33 @@ def create_tables(conn):
         )
     """)
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS presentations (
+            id             VARCHAR PRIMARY KEY,
+            account_id     VARCHAR NOT NULL,
+            title          VARCHAR NOT NULL,
+            template_type  VARCHAR NOT NULL,
+            client_id      VARCHAR NOT NULL,
+            date_from      DATE NOT NULL,
+            date_to        DATE NOT NULL,
+            platforms      VARCHAR DEFAULT 'google,dv360,meta',
+            slides_json    TEXT,
+            status         VARCHAR DEFAULT 'ready',
+            created_at     TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS presentation_chats (
+            id                VARCHAR PRIMARY KEY,
+            presentation_id   VARCHAR NOT NULL,
+            slide_index       INTEGER NOT NULL,
+            role              VARCHAR NOT NULL,
+            content           TEXT NOT NULL,
+            created_at        TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
     # ========== PERFORMANCE INDEXES ==========
     conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_account_date_platform ON campaign_metrics (account_id, date_from, platform)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_campaign_metrics_upload_id ON campaign_metrics (upload_id)")
@@ -423,6 +456,7 @@ def create_tables(conn):
 def drop_all_tables(conn):
     """Drop all tables. Use only in dev/testing."""
     tables = [
+        "presentation_chats", "presentations",
         "actions_log", "client_config", "funnel_stages", "column_mappings", "upload_conflicts", "campaign_metrics",
         "upload_versions", "uploads", "upload_history", "pmax_channels", "search_terms", "creatives",
         "placements", "demographics", "geo_data", "daily_metrics",

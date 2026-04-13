@@ -27,8 +27,10 @@ class Settings(BaseSettings):
     # Database
     DB_PATH: str = os.getenv("DB_PATH", str(Path(__file__).parent.parent.parent / "ethinos.duckdb"))
 
-    # Security — no default; app exits at startup if unset
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    # Security — uses SECRET_KEY env var; dev fallback only when DEBUG=true
+    SECRET_KEY: str = os.getenv("SECRET_KEY") or (
+        "dev-secret-key-DO-NOT-USE-IN-PRODUCTION" if os.getenv("DEBUG", "false").lower() == "true" else "MISSING-SET-SECRET-KEY-ENV-VAR"
+    )
 
     # CORS — comma-separated origins in env, list here as default
     CORS_ORIGINS: str = os.getenv(

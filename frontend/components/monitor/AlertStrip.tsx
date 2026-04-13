@@ -1,35 +1,34 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { buildCampaignDeepLink } from "@/lib/analytics";
 
 export interface Alert {
   id: string;
   severity: 'error' | 'warning' | 'success';
-  message: string;
+  headline: string;
+  context?: string;
+  message?: string; // legacy fallback
   campaign?: string;
   platform?: string;
-  targetPage?: string; // e.g., '/dashboard/analytics/google-ads/campaigns'
+  metric?: string;
+  targetPage?: string;
 }
 
 interface AlertStripProps {
   alerts: Alert[];
   onDismiss: (alertId: string) => void;
-  accountId?: string;  // Account ID for deep-links
-  dateFrom?: string;   // Date range start (YYYY-MM-DD)
-  dateTo?: string;     // Date range end (YYYY-MM-DD)
+  accountId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 /**
  * AlertStrip Component
  *
- * Displays 2-4 health alerts for a marketing account.
- * Color-coded by severity: red (error), amber (warning), green (success).
- * Each alert is dismissable via the [X] button and clickable to navigate to analytics pages.
- *
- * Displays nothing when alerts array is empty.
+ * Displays health alerts with severity-coded left border, Lucide icons,
+ * campaign-specific headlines, context lines, and [View Details] deep links.
  */
 export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: AlertStripProps) {
   const router = useRouter();
@@ -37,23 +36,50 @@ export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: A
     return null;
   }
 
-  // Color mappings for severity levels
   const severityStyles = {
     error: {
-      container: 'bg-red-50 border-red-200',
-      icon: '🔴',
-      text: 'text-red-800',
+      border: 'border-l-red-500',
+      bg: 'bg-red-950/20',
+      iconColor: 'text-red-400',
+      textColor: 'text-red-300',
+      contextColor: 'text-red-400/70',
+      Icon: AlertCircle,
     },
     warning: {
-      container: 'bg-amber-50 border-amber-200',
-      icon: '🟡',
-      text: 'text-amber-800',
+      border: 'border-l-amber-500',
+      bg: 'bg-amber-950/20',
+      iconColor: 'text-amber-400',
+      textColor: 'text-amber-300',
+      contextColor: 'text-amber-400/70',
+      Icon: AlertTriangle,
     },
     success: {
-      container: 'bg-green-50 border-green-200',
-      icon: '✅',
-      text: 'text-green-800',
+      border: 'border-l-green-500',
+      bg: 'bg-green-950/20',
+      iconColor: 'text-green-400',
+      textColor: 'text-green-300',
+      contextColor: 'text-green-400/70',
+      Icon: CheckCircle,
     },
+  };
+
+  const buildViewUrl = (alert: Alert): string | null => {
+    if (alert.targetPage) return alert.targetPage;
+    if (!alert.platform) return null;
+    const platformPaths: Record<string, string> = {
+      google: '/dashboard/analytics/google-ads/campaigns',
+      dv360: '/dashboard/analytics/dv360/campaigns',
+      meta: '/dashboard/analytics/meta/campaigns',
+    };
+    const basePath = platformPaths[alert.platform];
+    if (!basePath) return null;
+    const params = new URLSearchParams();
+    if (alert.campaign) params.set('campaign', alert.campaign);
+    if (alert.metric) params.set('highlight', alert.metric);
+    if (accountId) params.set('account_id', accountId);
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    return `${basePath}?${params.toString()}`;
   };
 
   return (
@@ -65,23 +91,9 @@ export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: A
     >
       {alerts.map((alert, idx) => {
         const styles = severityStyles[alert.severity];
-
-        const handleViewAlert = () => {
-          if (alert.platform && alert.campaign) {
-            const deepLink = buildCampaignDeepLink(
-              alert.platform as 'google' | 'dv360' | 'meta',
-              alert.campaign,
-              {
-                accountId,
-                dateFrom,
-                dateTo,
-              }
-            );
-            router.push(deepLink);
-          } else if (alert.targetPage) {
-            router.push(alert.targetPage);
-          }
-        };
+        const IconComponent = styles.Icon;
+        const viewUrl = buildViewUrl(alert);
+        const displayHeadline = alert.headline || alert.message || "Alert";
 
         return (
           <motion.div
@@ -89,33 +101,38 @@ export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: A
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.1, duration: 0.3 }}
-            className={`flex items-center justify-between px-4 py-3 rounded-lg border ${styles.container}`}
+            className={`flex items-start gap-3 px-4 py-3 rounded-lg border-l-4 ${styles.border} ${styles.bg} border border-border-primary`}
           >
-            <div className={`flex items-center gap-3 ${styles.text} text-sm flex-1`}>
-              <span className="text-base">{styles.icon}</span>
-              <span className="font-medium">{alert.message}</span>
+            <IconComponent className={`w-5 h-5 mt-0.5 flex-shrink-0 ${styles.iconColor}`} />
+
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className={`text-sm font-semibold ${styles.textColor}`}>
+                {displayHeadline}
+              </p>
+              {alert.context && (
+                <p className={`text-xs ${styles.contextColor}`}>
+                  {alert.context}
+                </p>
+              )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-              {((alert.platform && alert.campaign) || alert.targetPage) && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {viewUrl && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={handleViewAlert}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${styles.text} hover:bg-white/20`}
-                  aria-label={`View details for: ${alert.message}`}
+                  onClick={() => router.push(viewUrl)}
+                  className="px-3 py-1 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20 text-text-primary transition-colors"
                 >
-                  View
+                  View Details
                 </motion.button>
               )}
-
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onDismiss(alert.id)}
-                className={`flex-shrink-0 p-1 rounded hover:bg-white/30 transition-colors ${styles.text}`}
-                aria-label={`Dismiss alert: ${alert.message}`}
+                className="p-1 rounded hover:bg-white/10 transition-colors text-text-secondary"
+                aria-label={`Dismiss alert: ${displayHeadline}`}
               >
                 <X className="w-4 h-4" />
               </motion.button>

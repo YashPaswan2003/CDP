@@ -11,15 +11,16 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 def _get_account_context(account_id: str) -> dict:
-    """Get account context (campaigns, metrics, flags, config) for agent.
+    """Get account context (campaigns, metrics, flags, config, account name) for agent.
 
     Args:
         account_id: Account ID
 
     Returns:
-        Dict with context data
+        Dict with context data including account_name
     """
     context = {
+        "account_name": account_id,  # fallback to ID
         "campaigns": [],
         "flags": [],
         "config": {},
@@ -28,17 +29,31 @@ def _get_account_context(account_id: str) -> dict:
     try:
         conn = get_connection()
 
-        # Get campaigns
+        # Get account name
+        account = conn.execute(
+            "SELECT name FROM accounts WHERE id = ?",
+            [account_id]
+        ).fetchone()
+        if account:
+            context["account_name"] = account[0]
+
+        # Get campaigns with more detail
         campaigns = conn.execute(
-            "SELECT name, spent, revenue, roas FROM campaigns WHERE account_id = ? LIMIT 10",
+            """SELECT name, platform, spent, revenue, roas, impressions, clicks, conversions, status
+               FROM campaigns WHERE account_id = ? LIMIT 15""",
             [account_id]
         ).fetchall()
         context["campaigns"] = [
             {
                 "name": c[0],
-                "spent": float(c[1]) if c[1] else 0,
-                "revenue": float(c[2]) if c[2] else 0,
-                "roas": float(c[3]) if c[3] else 0,
+                "platform": c[1] or "unknown",
+                "spent": float(c[2]) if c[2] else 0,
+                "revenue": float(c[3]) if c[3] else 0,
+                "roas": float(c[4]) if c[4] else 0,
+                "impressions": int(c[5]) if c[5] else 0,
+                "clicks": int(c[6]) if c[6] else 0,
+                "conversions": int(c[7]) if c[7] else 0,
+                "status": c[8] or "unknown",
             }
             for c in campaigns
         ]
@@ -59,7 +74,7 @@ def _get_account_context(account_id: str) -> dict:
 
         conn.close()
     except Exception as e:
-        logger.warning(f"Error loading account context: {str(e)}")
+        logger.warning(f"Error loading account context for {account_id}: {str(e)}")
 
     return context
 
@@ -70,35 +85,36 @@ async def chat(
     current_user: dict = Depends(get_current_user),
     account_id: str = Query(..., description="Account ID"),
 ):
-    """Chat with Claude AI for insights and analysis."""
+    """Chat with AI for insights and analysis."""
     try:
         user_message = request.messages[-1].content if request.messages else ""
 
         if not user_message:
             raise HTTPException(status_code=400, detail="Message required")
 
-        # Get account context for agent
+        # Get account context for agent (includes account name)
         context = _get_account_context(account_id)
+        account_name = context.get("account_name", account_id)
 
         # Initialize insights agent with context
         agent = InsightsAgent(account_id=account_id, context=context)
 
-        # Get response from Claude
+        # Get response from AI
         response = agent.chat(user_message)
 
-        logger.info(f"Chat request from {current_user.get('name', 'unknown')} account {account_id}: {user_message[:100]}")
+        logger.info(f"Chat request from {current_user.get('name', 'unknown')} for {account_name}: {user_message[:100]}")
 
         return ChatResponse(
             message=response,
-            tokens_used=0,  # Claude API handles token counting
+            tokens_used=0,
             client_id=account_id,
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Chat error: {str(e)}", exc_info=True)
+        logger.error(f"Chat error for account {account_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="Failed to generate response. Please try again."
+            detail="I'm having trouble generating a response right now. Please try again in a moment."
         )

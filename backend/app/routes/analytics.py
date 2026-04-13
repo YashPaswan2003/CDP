@@ -35,33 +35,24 @@ def get_campaigns(
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
-    result = conn.execute(query, params).fetchall()
-    conn.close()
+    try:
+        cursor = conn.execute(query, params)
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        result = cursor.fetchall()
+    finally:
+        conn.close()
 
-    campaigns = [
-        {
-            "id": row[0],
-            "account_id": row[1],
-            "name": row[2],
-            "platform": row[3],
-            "type": row[4],
-            "objective": row[5],
-            "status": row[6],
-            "budget": float(row[7]) if row[7] else 0,
-            "spent": float(row[8]) if row[8] else 0,
-            "impressions": row[9],
-            "clicks": row[10],
-            "conversions": row[11],
-            "revenue": float(row[12]) if row[12] else 0,
-            "ctr": float(row[13]) if row[13] else 0,
-            "cpc": float(row[14]) if row[14] else 0,
-            "cvr": float(row[15]) if row[15] else 0,
-            "roas": float(row[16]) if row[16] else 0,
-            "reach": row[17],
-            "frequency": float(row[18]) if row[18] else None,
-        }
-        for row in result
-    ]
+    # Map column names from DuckDB result
+    campaigns = []
+    for row in result:
+        c = {}
+        for i, col in enumerate(columns):
+            val = row[i]
+            if col in ("budget", "spent", "revenue", "ctr", "cpc", "cvr", "roas", "previous_roas", "frequency"):
+                c[col] = float(val) if val is not None else None
+            else:
+                c[col] = val
+        campaigns.append(c)
 
     logger.info(f"GET /api/analytics/campaigns - returned {len(campaigns)} campaigns")
     return {"campaigns": campaigns}
@@ -763,21 +754,89 @@ def get_summary(
 
 # ========== PERIOD COMPARISON ==========
 @router.get("/period-comparison")
-def get_period_comparison(current_user: dict = Depends(get_current_user)):
-    """Get month-over-month comparison data."""
-    comparison = {
-        "month": [
-            {"metric": "Impressions", "previousValue": 8200000, "currentValue": 10952000, "changePercent": 33.6},
-            {"metric": "Clicks", "previousValue": 280000, "currentValue": 205520, "changePercent": -26.7},
-            {"metric": "Conversions", "previousValue": 8200, "currentValue": 7810, "changePercent": -4.8},
-            {"metric": "Spend", "previousValue": 380000, "currentValue": 429900, "changePercent": 13.1},
-            {"metric": "Revenue", "previousValue": 1050000, "currentValue": 1180000, "changePercent": 12.4},
-            {"metric": "ROAS", "previousValue": 2.76, "currentValue": 2.75, "changePercent": -0.4},
-            {"metric": "CTR", "previousValue": 3.41, "currentValue": 1.88, "changePercent": -44.9},
-            {"metric": "CPC", "previousValue": 1.36, "currentValue": 2.09, "changePercent": 53.7},
-            {"metric": "CVR", "previousValue": 2.93, "currentValue": 3.8, "changePercent": 29.7},
-        ]
-    }
+def get_period_comparison(
+    current_user: dict = Depends(get_current_user),
+    account_id: str = Query(None),
+    platform: str = Query(None),
+    period: str = Query("month", description="Comparison period: week, month, quarter"),
+):
+    """Get period-over-period comparison from real data."""
+    conn = get_connection()
+    try:
+        from datetime import date, timedelta
 
-    logger.info("GET /api/analytics/period-comparison - returned month comparison data")
-    return comparison
+        today = date.today()
+        if period == "week":
+            current_start = today - timedelta(days=7)
+            prev_start = current_start - timedelta(days=7)
+            prev_end = current_start - timedelta(days=1)
+        elif period == "quarter":
+            current_start = today - timedelta(days=90)
+            prev_start = current_start - timedelta(days=90)
+            prev_end = current_start - timedelta(days=1)
+        else:  # month
+            current_start = today - timedelta(days=30)
+            prev_start = current_start - timedelta(days=30)
+            prev_end = current_start - timedelta(days=1)
+
+        where_clause = "date BETWEEN ? AND ?"
+        params_current = [current_start.isoformat(), today.isoformat()]
+        params_prev = [prev_start.isoformat(), prev_end.isoformat()]
+
+        if account_id:
+            where_clause += " AND account_id = ?"
+            params_current.append(account_id)
+            params_prev.append(account_id)
+        if platform:
+            where_clause += " AND platform = ?"
+            params_current.append(platform)
+            params_prev.append(platform)
+
+        query = f"""
+            SELECT COALESCE(SUM(impressions), 0), COALESCE(SUM(clicks), 0),
+                   COALESCE(SUM(conversions), 0), COALESCE(SUM(spend), 0),
+                   COALESCE(SUM(revenue), 0)
+            FROM daily_metrics WHERE {where_clause}
+        """
+
+        cur = conn.execute(query, params_current).fetchone()
+        prev = conn.execute(query, params_prev).fetchone()
+
+        def pct_change(curr, prev_val):
+            if prev_val and prev_val > 0:
+                return round((curr - prev_val) / prev_val * 100, 1)
+            return 0
+
+        c_imp, c_clk, c_conv, c_spend, c_rev = [float(x) for x in cur]
+        p_imp, p_clk, p_conv, p_spend, p_rev = [float(x) for x in prev]
+
+        c_roas = round(c_rev / c_spend, 2) if c_spend > 0 else 0
+        p_roas = round(p_rev / p_spend, 2) if p_spend > 0 else 0
+        c_ctr = round(c_clk / c_imp * 100, 2) if c_imp > 0 else 0
+        p_ctr = round(p_clk / p_imp * 100, 2) if p_imp > 0 else 0
+        c_cpc = round(c_spend / c_clk, 2) if c_clk > 0 else 0
+        p_cpc = round(p_spend / p_clk, 2) if p_clk > 0 else 0
+        c_cvr = round(c_conv / c_clk * 100, 2) if c_clk > 0 else 0
+        p_cvr = round(p_conv / p_clk * 100, 2) if p_clk > 0 else 0
+        c_cpa = round(c_spend / c_conv, 2) if c_conv > 0 else 0
+        p_cpa = round(p_spend / p_conv, 2) if p_conv > 0 else 0
+
+        comparison = {
+            period: [
+                {"metric": "Impressions", "currentValue": c_imp, "previousValue": p_imp, "changePercent": pct_change(c_imp, p_imp)},
+                {"metric": "Clicks", "currentValue": c_clk, "previousValue": p_clk, "changePercent": pct_change(c_clk, p_clk)},
+                {"metric": "Conversions", "currentValue": c_conv, "previousValue": p_conv, "changePercent": pct_change(c_conv, p_conv)},
+                {"metric": "Spend", "currentValue": c_spend, "previousValue": p_spend, "changePercent": pct_change(c_spend, p_spend)},
+                {"metric": "Revenue", "currentValue": c_rev, "previousValue": p_rev, "changePercent": pct_change(c_rev, p_rev)},
+                {"metric": "ROAS", "currentValue": c_roas, "previousValue": p_roas, "changePercent": pct_change(c_roas, p_roas)},
+                {"metric": "CTR", "currentValue": c_ctr, "previousValue": p_ctr, "changePercent": pct_change(c_ctr, p_ctr)},
+                {"metric": "CPC", "currentValue": c_cpc, "previousValue": p_cpc, "changePercent": pct_change(c_cpc, p_cpc)},
+                {"metric": "CVR", "currentValue": c_cvr, "previousValue": p_cvr, "changePercent": pct_change(c_cvr, p_cvr)},
+                {"metric": "CPA", "currentValue": c_cpa, "previousValue": p_cpa, "changePercent": pct_change(c_cpa, p_cpa)},
+            ]
+        }
+
+        logger.info(f"GET /api/analytics/period-comparison - {period} comparison for account={account_id} platform={platform}")
+        return comparison
+    finally:
+        conn.close()

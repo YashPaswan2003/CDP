@@ -2,20 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import { getFlags, executeAction } from '@/lib/api';
-import { FlagBanner } from './FlagBanner';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, ChevronRight, Shield } from 'lucide-react';
+import Link from 'next/link';
 
 interface MonitorDiagnoseActProps {
   accountId?: string;
 }
 
+interface Flag {
+  metric: string;
+  current?: number;
+  previous?: number;
+  entities: string[];
+  entity_count: number;
+  severity: 'high' | 'medium' | 'low';
+  explanation: string;
+  campaign_name?: string;
+  client_name?: string;
+  platform?: string;
+  actions: { type: string; label: string; severity: string }[];
+}
+
+
 export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
-  const [flags, setFlags] = useState<any[]>([]);
-  const [severityDistribution, setSeverityDistribution] = useState<any>({});
+  const [flags, setFlags] = useState<Flag[]>([]);
+  const [severityDistribution, setSeverityDistribution] = useState<{ high?: number; medium?: number; low?: number }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
-  const [, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const loadFlags = async () => {
@@ -24,7 +38,6 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
@@ -41,53 +54,30 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
 
   useEffect(() => {
     loadFlags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]);
 
-  const handleAction = async (flag: any, action: any) => {
+  const handleAction = async (flag: Flag, action: { type: string; label: string }) => {
     if (!accountId) return;
-
-    setActionLoading(action.type);
     try {
-      // Use first entity if available, otherwise use flag metric as entity_id
       const entityId = flag.entities?.[0] || flag.metric;
       const entityType = flag.entities?.length > 0 ? 'campaign' : 'metric';
-
       const parameters = action.type === 'adjust_bid'
         ? { old_bid: 'current', new_bid: 'optimized' }
         : action.type === 'increase_budget'
         ? { old_budget: 'current', new_budget: 'increased' }
         : undefined;
 
-      const result = await executeAction(
-        accountId,
-        action.type,
-        entityType,
-        entityId,
-        parameters,
-      );
-
+      const result = await executeAction(accountId, action.type, entityType, entityId, parameters);
       if (result.success) {
-        setToast({
-          type: 'success',
-          message: `${action.label} executed successfully`,
-        });
-        // Reload flags after action
+        setToast({ type: 'success', message: `${action.label} executed successfully` });
         setTimeout(() => loadFlags(), 1500);
       } else {
-        setToast({
-          type: 'error',
-          message: result.message || 'Action failed',
-        });
+        setToast({ type: 'error', message: result.message || 'Action failed' });
       }
-    } catch (err) {
-      setToast({
-        type: 'error',
-        message: 'Failed to execute action',
-      });
-      console.error('Action execution error:', err);
+    } catch {
+      setToast({ type: 'error', message: 'Failed to execute action' });
     } finally {
-      setActionLoading(null);
-      // Auto-dismiss toast after 3 seconds
       setTimeout(() => setToast(null), 3000);
     }
   };
@@ -97,17 +87,28 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
     loadFlags().finally(() => setRetrying(false));
   };
 
+  const criticalCount = severityDistribution.high || 0;
+  const warningCount = severityDistribution.medium || 0;
+  const healthyCount = severityDistribution.low || 0;
+
+  const criticalFlags = flags.filter(f => f.severity === 'high');
+  const warningFlags = flags.filter(f => f.severity === 'medium');
+  const healthyFlags = flags.filter(f => f.severity === 'low');
+
   // Loading state
   if (loading) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Monitor • Diagnose • Act</h2>
-          <div className="text-sm text-gray-500">Loading alerts...</div>
+          <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary-400" />
+            Monitor / Diagnose / Act
+          </h2>
+          <span className="text-sm text-text-secondary">Loading alerts...</span>
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-gray-200 h-20 rounded-lg" />
+            <div key={i} className="animate-pulse bg-surface-elevated h-24 rounded-lg" />
           ))}
         </div>
       </div>
@@ -118,14 +119,13 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Monitor • Diagnose • Act</h2>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600" />
-          <div className="flex-1">
-            <p className="text-sm text-red-900 font-medium">{error}</p>
-          </div>
+        <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary-400" />
+          Monitor / Diagnose / Act
+        </h2>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400" />
+          <p className="text-sm text-red-300 flex-1">{error}</p>
           <button
             onClick={handleRetry}
             disabled={retrying}
@@ -138,34 +138,17 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
     );
   }
 
-  // No flags state
-  if (flags.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Monitor • Diagnose • Act</h2>
-          <div className="text-sm text-gray-500">✓ All clear</div>
-        </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <p className="text-sm text-green-900 font-medium">No anomalies detected</p>
-          <p className="text-xs text-green-700 mt-1">Your campaigns are running smoothly. Check back soon for updates.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Flags state
   return (
-    <div className="space-y-4">
-      {/* Toast Notification */}
+    <div className="space-y-5">
+      {/* Toast */}
       {toast && (
-        <div className={`${toast.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 flex items-center gap-3`}>
+        <div className={`${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'} border rounded-lg p-3 flex items-center gap-3`}>
           {toast.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
           )}
-          <p className={`text-sm font-medium ${toast.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
+          <p className={`text-sm font-medium ${toast.type === 'success' ? 'text-emerald-300' : 'text-red-300'}`}>
             {toast.message}
           </p>
         </div>
@@ -173,42 +156,184 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">Monitor • Diagnose • Act</h2>
-        <div className="flex items-center gap-4">
-          {/* Severity Distribution */}
-          <div className="flex gap-3 text-sm">
-            {severityDistribution.high > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-600" />
-                <span className="text-gray-700">{severityDistribution.high} HIGH</span>
-              </span>
-            )}
-            {severityDistribution.medium > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-600" />
-                <span className="text-gray-700">{severityDistribution.medium} MEDIUM</span>
-              </span>
-            )}
-            {severityDistribution.low > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-600" />
-                <span className="text-gray-700">{severityDistribution.low} LOW</span>
-              </span>
-            )}
-          </div>
-        </div>
+        <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary-400" />
+          Monitor / Diagnose / Act
+        </h2>
+        <Link
+          href="/dashboard/monitor"
+          className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors"
+        >
+          View Full Dashboard <ChevronRight className="w-4 h-4" />
+        </Link>
       </div>
 
-      {/* Flags List */}
-      <div className="space-y-3">
-        {flags.map((flag) => (
-          <FlagBanner
-            key={flag.metric}
-            {...flag}
-            onAction={(action) => handleAction(flag, action)}
-          />
-        ))}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Critical */}
+        <Link href="/dashboard/monitor/critical" className="block">
+          <div className="card border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+              </div>
+              <span className="text-sm font-medium text-red-400">Critical</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{criticalCount}</p>
+            <p className="text-xs text-text-secondary mt-1">items need attention</p>
+          </div>
+        </Link>
+
+        {/* Warning */}
+        <Link href="/dashboard/monitor/warning" className="block">
+          <div className="card border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+              </div>
+              <span className="text-sm font-medium text-amber-400">Warning</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{warningCount}</p>
+            <p className="text-xs text-text-secondary mt-1">items to review</p>
+          </div>
+        </Link>
+
+        {/* Healthy */}
+        <Link href="/dashboard/monitor/healthy" className="block">
+          <div className="card border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span className="text-sm font-medium text-emerald-400">On Track</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{healthyCount}</p>
+            <p className="text-xs text-text-secondary mt-1">items running well</p>
+          </div>
+        </Link>
       </div>
+
+      {/* Preview Lists */}
+      {flags.length === 0 ? (
+        <div className="card text-center py-8">
+          <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+          <p className="text-sm text-text-primary font-medium">No anomalies detected</p>
+          <p className="text-xs text-text-secondary mt-1">Your campaigns are running smoothly.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Critical Preview */}
+          {criticalFlags.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <h3 className="text-sm font-semibold text-red-400">Critical ({criticalCount})</h3>
+              </div>
+              <div className="space-y-2">
+                {criticalFlags.slice(0, 3).map((flag, i) => (
+                  <div key={`critical-${i}`} className="card border-l-2 border-l-red-500 py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text-primary truncate">
+                          <span className="font-medium capitalize">{flag.metric.replace(/_/g, ' ')}</span>
+                          {flag.current != null && (
+                            <span className="text-text-secondary"> — {flag.current.toFixed(2)}</span>
+                          )}
+                          {flag.previous != null && (
+                            <span className="text-text-secondary"> (was {flag.previous.toFixed(2)})</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-text-secondary mt-0.5 truncate">{flag.explanation}</p>
+                      </div>
+                      <div className="flex gap-2 ml-3 flex-shrink-0">
+                        {flag.actions.slice(0, 1).map((action) => (
+                          <button
+                            key={action.type}
+                            onClick={() => handleAction(flag, action)}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors"
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {criticalCount > 3 && (
+                  <Link
+                    href="/dashboard/monitor/critical"
+                    className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 pl-4"
+                  >
+                    View all {criticalCount} critical <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Warning Preview */}
+          {warningFlags.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-semibold text-amber-400">Warning ({warningCount})</h3>
+              </div>
+              <div className="space-y-2">
+                {warningFlags.slice(0, 2).map((flag, i) => (
+                  <div key={`warning-${i}`} className="card border-l-2 border-l-amber-500 py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text-primary truncate">
+                          <span className="font-medium capitalize">{flag.metric.replace(/_/g, ' ')}</span>
+                          {flag.current != null && (
+                            <span className="text-text-secondary"> — {flag.current.toFixed(2)}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-text-secondary mt-0.5 truncate">{flag.explanation}</p>
+                      </div>
+                      <div className="flex gap-2 ml-3 flex-shrink-0">
+                        {flag.actions.slice(0, 1).map((action) => (
+                          <button
+                            key={action.type}
+                            onClick={() => handleAction(flag, action)}
+                            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors"
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {warningCount > 2 && (
+                  <Link
+                    href="/dashboard/monitor/warning"
+                    className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 pl-4"
+                  >
+                    View all {warningCount} warnings <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Healthy Preview */}
+          {healthyFlags.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-semibold text-emerald-400">On Track ({healthyCount})</h3>
+              </div>
+              <Link
+                href="/dashboard/monitor/healthy"
+                className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 pl-4"
+              >
+                View all {healthyCount} on-track items <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
