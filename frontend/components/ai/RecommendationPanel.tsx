@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildCampaignDeepLink } from "@/lib/analytics";
-import { Lightbulb, Pause, TrendingDown, Eye } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 
 export interface Recommendation {
   id: string;
@@ -21,7 +21,6 @@ interface RecommendationPanelProps {
   recommendations: Recommendation[];
   onDismiss?: (id: string) => void;
   onAction?: (id: string) => void;
-  onQuickAction?: (id: string, actionType: string) => void;
   accountId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -36,7 +35,6 @@ export function RecommendationPanel({
   recommendations,
   onDismiss,
   onAction,
-  onQuickAction,
   accountId,
   dateFrom,
   dateTo
@@ -83,14 +81,6 @@ export function RecommendationPanel({
     meta: { name: 'Meta', color: '#7C3AED' },
   };
 
-  // Generate impact estimate if not provided
-  const getImpactEstimate = (rec: Recommendation): string => {
-    if (rec.impactEstimate) return rec.impactEstimate;
-    if (rec.priority === 'high') return 'Estimated impact: Save ~45K/week';
-    if (rec.priority === 'medium') return 'Estimated impact: +15% efficiency';
-    return 'Estimated impact: Marginal improvement';
-  };
-
   // Generate quick action if not provided
   const getQuickAction = (rec: Recommendation): { label: string; type: string } => {
     if (rec.quickAction) return rec.quickAction;
@@ -106,13 +96,6 @@ export function RecommendationPanel({
     return { label: 'Reduce Budget 30%', type: 'reduce_budget' };
   };
 
-  const quickActionIcons: Record<string, typeof Pause> = {
-    pause: Pause,
-    reduce_budget: TrendingDown,
-    adjust_budget: TrendingDown,
-    expand_audience: Eye,
-  };
-
   const handleDismiss = (id: string) => {
     setDismissed(prev => new Set([...prev, id]));
     onDismiss?.(id);
@@ -123,14 +106,10 @@ export function RecommendationPanel({
       accountId,
       dateFrom,
       dateTo,
+      view: 'campaign',
     });
     router.push(deepLink);
     onAction?.(rec.id);
-  };
-
-  const handleQuickAction = (rec: Recommendation) => {
-    const qa = getQuickAction(rec);
-    onQuickAction?.(rec.id, qa.type);
   };
 
   return (
@@ -152,9 +131,7 @@ export function RecommendationPanel({
         {visibleRecommendations.map((rec, idx) => {
           const priority = priorityStyles[rec.priority];
           const platform = platformStyles[rec.platform];
-          const impactEstimate = getImpactEstimate(rec);
           const quickAction = getQuickAction(rec);
-          const QuickActionIcon = quickActionIcons[quickAction.type] || Pause;
 
           return (
             <motion.div
@@ -191,19 +168,16 @@ export function RecommendationPanel({
                 </div>
 
                 {/* Issue */}
-                <p className="text-sm text-text-secondary">
-                  <span className="font-medium text-text-primary">Issue: </span>
-                  {rec.issue}
-                </p>
+                <div className="flex items-start gap-2 border-l-2 border-amber-400 pl-3 py-1 bg-amber-500/5 rounded-r">
+                  <p className="text-sm">
+                    <span className="text-amber-400 font-semibold">Issue: </span>
+                    <span className="text-text-secondary">{rec.issue}</span>
+                  </p>
+                </div>
 
                 {/* Action */}
                 <p className="text-sm text-text-primary font-medium">
                   {rec.action}
-                </p>
-
-                {/* Impact Estimate */}
-                <p className="text-xs text-primary-400 font-medium">
-                  {impactEstimate}
                 </p>
 
                 {/* Action Buttons */}
@@ -216,15 +190,9 @@ export function RecommendationPanel({
                   >
                     View
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleQuickAction(rec)}
-                    className="px-3 py-1.5 rounded-lg bg-accent-warning/20 text-accent-warning text-sm font-medium hover:bg-accent-warning/30 transition-colors flex items-center gap-1.5"
-                  >
-                    <QuickActionIcon className="w-3.5 h-3.5" />
-                    {quickAction.label}
-                  </motion.button>
+                  <span className="inline-flex items-center px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-400 italic">
+                    💡 {quickAction.label}
+                  </span>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

@@ -25,6 +25,8 @@ export interface DailyMetric {
   // BOFU
   vtc: number;
   cpa: number;
+  // Funnel stage assignment
+  funnel_stage: "tofu" | "mofu" | "bofu";
 }
 
 export interface SearchTerm {
@@ -2396,6 +2398,12 @@ function createPlatformMetric(
 
   const conversions = Math.round(clicks * baseline.conversionRate);
 
+  // Assign funnel stage deterministically based on date hash
+  const dayNum = parseInt(dateStr.replace(/-/g, ''), 10);
+  const platformIdx = baseline.platform === 'google' ? 0 : baseline.platform === 'dv360' ? 1 : 2;
+  const stages: Array<"tofu" | "mofu" | "bofu"> = ["tofu", "mofu", "bofu"];
+  const funnel_stage = stages[(dayNum + platformIdx) % 3];
+
   return {
     date: dateStr,
     platform: baseline.platform,
@@ -2415,6 +2423,7 @@ function createPlatformMetric(
     engagementRate: baseline.engagementRate,
     vtc: baseline.vtcPercentage > 0 ? Math.round(conversions * baseline.vtcPercentage) : 0,
     cpa: conversions > 0 ? spend / conversions : 0,
+    funnel_stage,
   };
 }
 

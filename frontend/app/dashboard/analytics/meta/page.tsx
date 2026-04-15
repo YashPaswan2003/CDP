@@ -2,10 +2,10 @@
 
 import { useAccount } from "@/lib/accountContext";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChartContainer, LineChart } from "@/components";
+import { ChartContainer, LineChart, DonutChart } from "@/components";
 import { fetchDailyMetrics, fetchCampaigns } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -19,10 +19,20 @@ import {
   Filter,
 } from "lucide-react";
 
+const META_TYPE_COLORS: Record<string, string> = {
+  Awareness: "#5C6BC0",
+  Conversions: "#F59E0B",
+  Engagement: "#10B981",
+  Retargeting: "#EF4444",
+};
+
+const META_CAMPAIGN_TYPES = ["Awareness", "Conversions", "Engagement", "Retargeting"];
+
 interface Campaign {
   id: string;
   name: string;
   platform: string;
+  type?: string;
   status: string;
   budget: number;
   spent: number;
@@ -39,7 +49,7 @@ interface Campaign {
   ad_set_count?: number;
 }
 
-type SortField = "name" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "revenue" | "roas" | "reach" | "frequency";
+type SortField = "name" | "type" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "revenue" | "roas" | "reach" | "frequency";
 
 export default function MetaAnalytics() {
   const { selectedAccount } = useAccount();
@@ -50,11 +60,33 @@ export default function MetaAnalytics() {
   const [selectedMetrics, setSelectedMetrics] = useState(["spend", "clicks"]);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [periodDays, setPeriodDays] = useState<number | null>(7);
   const [sortField, setSortField] = useState<SortField>("spent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [campaignFilter, setCampaignFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  const periodOptions = [
+    { label: "7D", days: 7 },
+    { label: "15D", days: 15 },
+    { label: "30D", days: 30 },
+    { label: "60D", days: 60 },
+    { label: "90D", days: 90 },
+    { label: "Custom", days: null },
+  ] as const;
+
+  const applyPeriod = useCallback((days: number | null) => {
+    setPeriodDays(days);
+    if (days !== null) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - days);
+      setDateFrom(start.toISOString().split("T")[0]);
+      setDateTo(end.toISOString().split("T")[0]);
+    }
+  }, []);
 
   // Parse deep-link query params
   useEffect(() => {
@@ -79,12 +111,22 @@ export default function MetaAnalytics() {
         fetchCampaigns({ account_id: selectedAccount?.id, platform: "meta" }),
       ]);
       setDailyMetrics(metrics);
-      setCampaigns(camps);
+      // Assign types to campaigns deterministically
+      const typedCamps = camps.map((c: any, idx: number) => {
+        if (c.type) return c;
+        const lower = (c.name || "").toLowerCase();
+        let type: string;
+        if (lower.includes("awareness") || lower.includes("brand")) type = "Awareness";
+        else if (lower.includes("retarget") || lower.includes("remarket")) type = "Retargeting";
+        else if (lower.includes("engagement") || lower.includes("traffic")) type = "Engagement";
+        else if (lower.includes("conversion") || lower.includes("purchase")) type = "Conversions";
+        else type = META_CAMPAIGN_TYPES[idx % META_CAMPAIGN_TYPES.length];
+        return { ...c, type };
+      });
+      setCampaigns(typedCamps);
 
       if (metrics.length > 0 && !dateFrom && !dateTo) {
-        const dates = metrics.map((m: any) => m.date).sort();
-        setDateFrom(dates[0]);
-        setDateTo(dates[dates.length - 1]);
+        applyPeriod(7);
       }
     };
     load();
@@ -148,8 +190,30 @@ export default function MetaAnalytics() {
     })
     .filter((item) => metaMetrics.some((d: any) => d[item.key] !== undefined));
 
+  // Apply type filter
+  const filteredCampaigns = useMemo(() => {
+    if (!typeFilter) return campaigns;
+    return campaigns.filter((c) => c.type === typeFilter);
+  }, [campaigns, typeFilter]);
+
+  // Donut chart data — spend by campaign type
+  const spendByType = useMemo(() => {
+    const map: Record<string, number> = {};
+    campaigns.forEach((c) => {
+      const t = c.type || "Other";
+      map[t] = (map[t] || 0) + c.spent;
+    });
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [campaigns]);
+
+  const donutColors = spendByType.map(
+    (d) => META_TYPE_COLORS[d.name] || "#6B7280"
+  );
+
   const sortedCampaigns = useMemo(() => {
-    return [...campaigns].sort((a, b) => {
+    return [...filteredCampaigns].sort((a, b) => {
       const aVal = a[sortField as keyof Campaign];
       const bVal = b[sortField as keyof Campaign];
       if (typeof aVal === "string" && typeof bVal === "string") return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
@@ -157,7 +221,7 @@ export default function MetaAnalytics() {
       const bNum = Number(bVal) || 0;
       return sortDir === "asc" ? aNum - bNum : bNum - aNum;
     });
-  }, [campaigns, sortField, sortDir]);
+  }, [filteredCampaigns, sortField, sortDir]);
 
   const totalPages = Math.ceil(sortedCampaigns.length / rowsPerPage);
   const paginatedCampaigns = sortedCampaigns.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -204,18 +268,38 @@ export default function MetaAnalytics() {
         ))}
       </div>
 
-      {/* Date Range */}
-      <div className="flex gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">From</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-2 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">To</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-2 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20" />
-        </div>
+      {/* Period Selector Pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        {periodOptions.map((opt) => (
+          <button
+            key={opt.label}
+            onClick={() => applyPeriod(opt.days)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              periodDays === opt.days
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-gray-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {periodDays === null && (
+          <div className="flex items-center gap-2 ml-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20"
+            />
+            <span className="text-text-secondary text-sm">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20"
+            />
+          </div>
+        )}
       </div>
 
       {/* Audience Fatigue Warning */}
@@ -244,6 +328,22 @@ export default function MetaAnalytics() {
             className="ml-auto p-1 rounded hover:bg-primary-500/20 text-primary-400 transition-colors"
           >
             <XIcon className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Type Filter Banner */}
+      {typeFilter && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
+          <Filter className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+          <span className="text-sm text-indigo-300">
+            Showing: <strong className="text-indigo-200">{filteredCampaigns.length}</strong> {typeFilter} campaign{filteredCampaigns.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={() => setTypeFilter(null)}
+            className="ml-auto px-2 py-1 rounded text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors"
+          >
+            Clear filter
           </button>
         </div>
       )}
@@ -309,6 +409,13 @@ export default function MetaAnalytics() {
         </div>
       </ChartContainer>
 
+      {/* Donut — Spend by Campaign Type */}
+      {spendByType.length > 0 && (
+        <ChartContainer title="Spend by Campaign Type">
+          <DonutChart data={spendByType} colors={donutColors} height={280} />
+        </ChartContainer>
+      )}
+
       {/* Campaign Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border-primary">
@@ -327,6 +434,7 @@ export default function MetaAnalytics() {
               <tr className="border-b border-border-primary bg-surface-base/50">
                 {([
                   { field: "name" as SortField, label: "Name", align: "left" },
+                  { field: "type" as SortField, label: "Type", align: "left" },
                   { field: "status" as SortField, label: "Status", align: "left" },
                   { field: "budget" as SortField, label: "Budget", align: "right" },
                   { field: "spent" as SortField, label: "Spend", align: "right" },
@@ -354,6 +462,19 @@ export default function MetaAnalytics() {
                 return (
                   <tr key={c.id} className={`border-b border-border-primary/50 hover:bg-surface-elevated/50 transition-colors ${isFreqHigh ? "bg-amber-500/5" : ""}`}>
                     <td className="px-3 py-3 text-text-primary font-medium max-w-[200px] truncate">{c.name}</td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => setTypeFilter(c.type || null)}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                        style={{
+                          backgroundColor: `${META_TYPE_COLORS[c.type || ""] || "#6B7280"}20`,
+                          color: META_TYPE_COLORS[c.type || ""] || "#9CA3AF",
+                          border: `1px solid ${META_TYPE_COLORS[c.type || ""] || "#6B7280"}40`,
+                        }}
+                      >
+                        {c.type || "Other"}
+                      </button>
+                    </td>
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-1.5">
                         <span className={`w-2 h-2 rounded-full ${c.status === "active" ? "bg-emerald-400" : c.status === "paused" ? "bg-red-400" : "bg-gray-400"}`} />
@@ -385,7 +506,7 @@ export default function MetaAnalytics() {
                 );
               })}
               {paginatedCampaigns.length === 0 && (
-                <tr><td colSpan={14} className="px-3 py-8 text-center text-text-secondary">No campaigns found</td></tr>
+                <tr><td colSpan={15} className="px-3 py-8 text-center text-text-secondary">No campaigns found</td></tr>
               )}
             </tbody>
           </table>

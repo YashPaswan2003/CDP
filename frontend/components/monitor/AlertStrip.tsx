@@ -39,26 +39,26 @@ export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: A
   const severityStyles = {
     error: {
       border: 'border-l-red-500',
-      bg: 'bg-red-950/20',
+      bg: 'bg-red-950/40',
       iconColor: 'text-red-400',
-      textColor: 'text-red-300',
-      contextColor: 'text-red-400/70',
+      textColor: 'text-red-200',
+      contextColor: 'text-red-300/90',
       Icon: AlertCircle,
     },
     warning: {
       border: 'border-l-amber-500',
-      bg: 'bg-amber-950/20',
+      bg: 'bg-amber-950/40',
       iconColor: 'text-amber-400',
-      textColor: 'text-amber-300',
-      contextColor: 'text-amber-400/70',
+      textColor: 'text-amber-200',
+      contextColor: 'text-amber-300/90',
       Icon: AlertTriangle,
     },
     success: {
       border: 'border-l-green-500',
-      bg: 'bg-green-950/20',
+      bg: 'bg-green-950/40',
       iconColor: 'text-green-400',
-      textColor: 'text-green-300',
-      contextColor: 'text-green-400/70',
+      textColor: 'text-green-200',
+      contextColor: 'text-green-300/90',
       Icon: CheckCircle,
     },
   };
@@ -106,7 +106,7 @@ export function AlertStrip({ alerts, onDismiss, accountId, dateFrom, dateTo }: A
             <IconComponent className={`w-5 h-5 mt-0.5 flex-shrink-0 ${styles.iconColor}`} />
 
             <div className="flex-1 min-w-0 space-y-0.5">
-              <p className={`text-sm font-semibold ${styles.textColor}`}>
+              <p className={`text-base font-bold ${styles.textColor}`}>
                 {displayHeadline}
               </p>
               {alert.context && (

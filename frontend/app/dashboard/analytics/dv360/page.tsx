@@ -2,10 +2,10 @@
 
 import { useAccount } from "@/lib/accountContext";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChartContainer, LineChart } from "@/components";
+import { ChartContainer, LineChart, DonutChart } from "@/components";
 import { fetchDailyMetrics, fetchCampaigns, fetchInsertionOrders } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -23,6 +23,7 @@ interface IOData {
   name: string;
   campaignId?: string;
   campaignName?: string;
+  type?: string;
   status: string;
   budget: number;
   spent: number;
@@ -39,7 +40,16 @@ interface IOData {
   roas: number;
 }
 
-type SortField = "name" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "revenue" | "roas" | "views" | "vtr" | "cpv";
+const DV360_TYPE_COLORS: Record<string, string> = {
+  Awareness: "#5C6BC0",
+  Performance: "#F59E0B",
+  Video: "#10B981",
+  Retargeting: "#EF4444",
+};
+
+const DV360_CAMPAIGN_TYPES = ["Awareness", "Performance", "Video", "Retargeting"];
+
+type SortField = "name" | "type" | "status" | "budget" | "spent" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cvr" | "revenue" | "roas" | "views" | "vtr" | "cpv";
 
 export default function DV360Analytics() {
   const { selectedAccount } = useAccount();
@@ -51,11 +61,33 @@ export default function DV360Analytics() {
   const [selectedMetrics, setSelectedMetrics] = useState(["spend", "impressions"]);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [periodDays, setPeriodDays] = useState<number | null>(7);
   const [sortField, setSortField] = useState<SortField>("spent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [campaignFilter, setCampaignFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  const periodOptions = [
+    { label: "7D", days: 7 },
+    { label: "15D", days: 15 },
+    { label: "30D", days: 30 },
+    { label: "60D", days: 60 },
+    { label: "90D", days: 90 },
+    { label: "Custom", days: null },
+  ] as const;
+
+  const applyPeriod = useCallback((days: number | null) => {
+    setPeriodDays(days);
+    if (days !== null) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - days);
+      setDateFrom(start.toISOString().split("T")[0]);
+      setDateTo(end.toISOString().split("T")[0]);
+    }
+  }, []);
 
   // Parse deep-link query params
   useEffect(() => {
@@ -85,9 +117,8 @@ export default function DV360Analytics() {
       setInsertionOrders(ios);
 
       if (metrics.length > 0 && !dateFrom && !dateTo) {
-        const dates = metrics.map((m: any) => m.date).sort();
-        setDateFrom(dates[0]);
-        setDateTo(dates[dates.length - 1]);
+        // Apply default 7D period
+        applyPeriod(7);
       }
     };
     load();
@@ -155,31 +186,71 @@ export default function DV360Analytics() {
     })
     .filter((item) => dv360Metrics.some((d: any) => d[item.key] !== undefined));
 
-  // Use IOs if available, fall back to campaigns
+  // Use IOs if available, fall back to campaigns — assign a type deterministically
   const tableData: IOData[] = useMemo(() => {
-    if (insertionOrders.length > 0) return insertionOrders;
-    return campaigns.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      status: c.status || "active",
-      budget: c.budget || 0,
-      spent: c.spent || 0,
-      impressions: c.impressions || 0,
-      clicks: c.clicks || 0,
-      conversions: c.conversions || 0,
-      views: c.views || 0,
-      vtr: c.views && c.impressions ? c.views / c.impressions : 0,
-      cpv: c.views ? c.spent / c.views : 0,
-      ctr: c.ctr || 0,
-      cpc: c.cpc || 0,
-      cvr: c.cvr || 0,
-      revenue: c.revenue || 0,
-      roas: c.revenue && c.spent ? c.revenue / c.spent : 0,
-    }));
+    const assignType = (name: string, idx: number) => {
+      const lower = name.toLowerCase();
+      if (lower.includes("awareness") || lower.includes("brand")) return "Awareness";
+      if (lower.includes("video") || lower.includes("youtube")) return "Video";
+      if (lower.includes("retarget") || lower.includes("remarket")) return "Retargeting";
+      if (lower.includes("performance") || lower.includes("conversion")) return "Performance";
+      return DV360_CAMPAIGN_TYPES[idx % DV360_CAMPAIGN_TYPES.length];
+    };
+
+    let rows: IOData[];
+    if (insertionOrders.length > 0) {
+      rows = insertionOrders.map((io, idx) => ({
+        ...io,
+        type: io.type || assignType(io.name, idx),
+      }));
+    } else {
+      rows = campaigns.map((c: any, idx: number) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type || assignType(c.name, idx),
+        status: c.status || "active",
+        budget: c.budget || 0,
+        spent: c.spent || 0,
+        impressions: c.impressions || 0,
+        clicks: c.clicks || 0,
+        conversions: c.conversions || 0,
+        views: c.views || 0,
+        vtr: c.views && c.impressions ? c.views / c.impressions : 0,
+        cpv: c.views ? c.spent / c.views : 0,
+        ctr: c.ctr || 0,
+        cpc: c.cpc || 0,
+        cvr: c.cvr || 0,
+        revenue: c.revenue || 0,
+        roas: c.revenue && c.spent ? c.revenue / c.spent : 0,
+      }));
+    }
+    return rows;
   }, [insertionOrders, campaigns]);
 
+  // Apply type filter
+  const filteredTableData = useMemo(() => {
+    if (!typeFilter) return tableData;
+    return tableData.filter((row) => row.type === typeFilter);
+  }, [tableData, typeFilter]);
+
+  // Donut chart data — spend by campaign type
+  const spendByType = useMemo(() => {
+    const map: Record<string, number> = {};
+    tableData.forEach((row) => {
+      const t = row.type || "Other";
+      map[t] = (map[t] || 0) + row.spent;
+    });
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [tableData]);
+
+  const donutColors = spendByType.map(
+    (d) => DV360_TYPE_COLORS[d.name] || "#6B7280"
+  );
+
   const sortedData = useMemo(() => {
-    return [...tableData].sort((a, b) => {
+    return [...filteredTableData].sort((a, b) => {
       const aVal = a[sortField as keyof IOData];
       const bVal = b[sortField as keyof IOData];
       if (typeof aVal === "string" && typeof bVal === "string") return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
@@ -187,7 +258,7 @@ export default function DV360Analytics() {
       const bNum = Number(bVal) || 0;
       return sortDir === "asc" ? aNum - bNum : bNum - aNum;
     });
-  }, [tableData, sortField, sortDir]);
+  }, [filteredTableData, sortField, sortDir]);
 
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
   const paginatedData = sortedData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -235,18 +306,38 @@ export default function DV360Analytics() {
         ))}
       </div>
 
-      {/* Date Range */}
-      <div className="flex gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">From</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-2 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">To</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-2 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20" />
-        </div>
+      {/* Period Selector Pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        {periodOptions.map((opt) => (
+          <button
+            key={opt.label}
+            onClick={() => applyPeriod(opt.days)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              periodDays === opt.days
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-gray-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {periodDays === null && (
+          <div className="flex items-center gap-2 ml-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20"
+            />
+            <span className="text-text-secondary text-sm">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20"
+            />
+          </div>
+        )}
       </div>
 
       {/* Campaign Filter Banner (from deep-link) */}
@@ -261,6 +352,22 @@ export default function DV360Analytics() {
             className="ml-auto p-1 rounded hover:bg-primary-500/20 text-primary-400 transition-colors"
           >
             <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Type Filter Banner */}
+      {typeFilter && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
+          <Filter className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+          <span className="text-sm text-indigo-300">
+            Showing: <strong className="text-indigo-200">{filteredTableData.length}</strong> {typeFilter} campaign{filteredTableData.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={() => setTypeFilter(null)}
+            className="ml-auto px-2 py-1 rounded text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors"
+          >
+            Clear filter
           </button>
         </div>
       )}
@@ -321,6 +428,13 @@ export default function DV360Analytics() {
         </div>
       </ChartContainer>
 
+      {/* Donut — Spend by Campaign Type */}
+      {spendByType.length > 0 && (
+        <ChartContainer title="Spend by Campaign Type">
+          <DonutChart data={spendByType} colors={donutColors} height={280} />
+        </ChartContainer>
+      )}
+
       {/* IO / Campaign Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border-primary">
@@ -341,6 +455,7 @@ export default function DV360Analytics() {
               <tr className="border-b border-border-primary bg-surface-base/50">
                 {([
                   { field: "name" as SortField, label: "Name", align: "left" },
+                  { field: "type" as SortField, label: "Type", align: "left" },
                   { field: "status" as SortField, label: "Status", align: "left" },
                   { field: "budget" as SortField, label: "Budget", align: "right" },
                   { field: "spent" as SortField, label: "Spend", align: "right" },
@@ -369,6 +484,19 @@ export default function DV360Analytics() {
                 return (
                   <tr key={row.id} className="border-b border-border-primary/50 hover:bg-surface-elevated/50 transition-colors">
                     <td className="px-3 py-3 text-text-primary font-medium max-w-[200px] truncate">{row.name}</td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => setTypeFilter(row.type || null)}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                        style={{
+                          backgroundColor: `${DV360_TYPE_COLORS[row.type || ""] || "#6B7280"}20`,
+                          color: DV360_TYPE_COLORS[row.type || ""] || "#9CA3AF",
+                          border: `1px solid ${DV360_TYPE_COLORS[row.type || ""] || "#6B7280"}40`,
+                        }}
+                      >
+                        {row.type || "Other"}
+                      </button>
+                    </td>
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-1.5">
                         <span className={`w-2 h-2 rounded-full ${row.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
@@ -406,7 +534,7 @@ export default function DV360Analytics() {
                 );
               })}
               {paginatedData.length === 0 && (
-                <tr><td colSpan={15} className="px-3 py-8 text-center text-text-secondary">No data found</td></tr>
+                <tr><td colSpan={16} className="px-3 py-8 text-center text-text-secondary">No data found</td></tr>
               )}
             </tbody>
           </table>

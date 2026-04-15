@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "@/lib/accountContext";
-import { getFlags, executeAction } from "@/lib/api";
+import { getFlags } from "@/lib/api";
 import { useParams } from "next/navigation";
 import {
   AlertCircle,
@@ -10,10 +10,6 @@ import {
   CheckCircle,
   ChevronLeft,
   ExternalLink,
-  Play,
-  Pause,
-  TrendingUp,
-  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -92,8 +88,6 @@ export function MonitorDrilldownClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState<string>("all");
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
   const apiSeverity = severityMap[severitySlug] || "high";
   const config = severityConfig[severitySlug] || severityConfig.critical;
   const Icon = config.icon;
@@ -118,32 +112,6 @@ export function MonitorDrilldownClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount?.id, apiSeverity]);
 
-  const handleAction = async (flag: Flag, action: { type: string; label: string }) => {
-    if (!selectedAccount?.id) return;
-    try {
-      const entityId = flag.entities?.[0] || flag.metric;
-      const entityType = flag.entities?.length > 0 ? "campaign" : "metric";
-      const parameters =
-        action.type === "adjust_bid"
-          ? { old_bid: "current", new_bid: "optimized" }
-          : action.type === "increase_budget"
-          ? { old_budget: "current", new_budget: "increased" }
-          : undefined;
-
-      const result = await executeAction(selectedAccount.id, action.type, entityType, entityId, parameters);
-      if (result.success) {
-        setToast({ type: "success", message: `${action.label} executed successfully` });
-        setTimeout(() => loadFlags(), 1500);
-      } else {
-        setToast({ type: "error", message: result.message || "Action failed" });
-      }
-    } catch {
-      setToast({ type: "error", message: "Failed to execute action" });
-    } finally {
-      setTimeout(() => setToast(null), 3000);
-    }
-  };
-
   const filteredFlags = platformFilter === "all" ? flags : flags.filter((f) => f.platform === platformFilter);
   const platformTabs = [
     { value: "all", label: "All" },
@@ -152,25 +120,8 @@ export function MonitorDrilldownClient() {
     { value: "meta", label: "Meta" },
   ];
 
-  const getActionIcon = (type: string) => {
-    switch (type) {
-      case "pause": return <Pause className="w-3 h-3" />;
-      case "resume": return <Play className="w-3 h-3" />;
-      case "adjust_bid": return <TrendingUp className="w-3 h-3" />;
-      case "increase_budget": return <DollarSign className="w-3 h-3" />;
-      default: return null;
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className={`${toast.type === "success" ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30"} border rounded-lg p-3 flex items-center gap-3`}>
-          {toast.type === "success" ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-red-400" />}
-          <p className={`text-sm font-medium ${toast.type === "success" ? "text-emerald-300" : "text-red-300"}`}>{toast.message}</p>
-        </div>
-      )}
-
       <div>
         <Link href="/dashboard/monitor" className="text-sm text-text-secondary hover:text-text-primary flex items-center gap-1 mb-3 transition-colors">
           <ChevronLeft className="w-4 h-4" /> Back to Monitor Overview
@@ -263,10 +214,10 @@ export function MonitorDrilldownClient() {
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     {flag.actions.map((action) => (
-                      <button key={action.type} onClick={() => handleAction(flag, action)}
-                        className={`px-4 py-2 ${config.btnClass} text-white text-sm font-medium rounded transition-colors flex items-center gap-1.5`}>
-                        {getActionIcon(action.type)} {action.label}
-                      </button>
+                      <span key={action.type}
+                        className="inline-flex items-center px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-400 italic">
+                        Suggestion: {action.label}
+                      </span>
                     ))}
                     {flag.platform && platformLinks[flag.platform] && (
                       <Link href={platformLinks[flag.platform]}

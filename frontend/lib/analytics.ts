@@ -21,6 +21,7 @@ interface DeepLinkOptions {
   accountId?: string;
   dateFrom?: string;
   dateTo?: string;
+  view?: 'campaign' | 'analytics';
 }
 
 /**
@@ -37,6 +38,24 @@ export function buildCampaignDeepLink(
   campaignName: string,
   options?: DeepLinkOptions,
 ): string {
+  // When view === 'campaign', route to the dedicated campaign detail page
+  if (options?.view === 'campaign') {
+    const encodedName = encodeURIComponent(campaignName);
+    const params = new URLSearchParams();
+    if (options?.accountId) {
+      params.set('account_id', options.accountId);
+    }
+    params.set('platform', platform);
+    if (options?.dateFrom) {
+      params.set('date_from', options.dateFrom);
+    }
+    if (options?.dateTo) {
+      params.set('date_to', options.dateTo);
+    }
+    return `/dashboard/campaigns/${encodedName}?${params.toString()}`;
+  }
+
+  // Default: route to platform analytics page with campaign filter
   const basePath = getAnalyticsPath(platform);
   const params = new URLSearchParams();
 

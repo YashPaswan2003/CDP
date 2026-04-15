@@ -14,6 +14,7 @@ import {
   Loader,
   Upload,
   Check,
+  ImageIcon,
 } from "lucide-react";
 
 interface TemplateOption {
@@ -73,10 +74,21 @@ export default function NewPresentationPage() {
   const [platforms, setPlatforms] = useState<string[]>(["google", "dv360", "meta"]);
   const [generating, setGenerating] = useState(false);
   const [clients, setClients] = useState<AccountOption[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
+  const [clientLogo, setClientLogo] = useState<string | null>(null);
+  const [primaryColor, setPrimaryColor] = useState(
+    account?.selectedAccount?.brandColors?.primary || "#1E40AF"
+  );
+  const [accentColor, setAccentColor] = useState(
+    account?.selectedAccount?.brandColors?.accent || "#F59E0B"
+  );
 
-  // Load available clients
+  // Load available clients with fallback chain
   useEffect(() => {
     const loadClients = async () => {
+      setClientsLoading(true);
+      let accts: AccountOption[] = [];
+
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -89,27 +101,39 @@ export default function NewPresentationPage() {
 
         if (response.ok) {
           const data = await response.json();
-          const accts = (data.accounts || []).map((a: { id: string; name: string }) => ({
+          accts = (data.accounts || []).map((a: { id: string; name: string }) => ({
             id: a.id,
             name: a.name,
           }));
-          setClients(accts);
-          if (accts.length > 0) setClientId(accts[0].id);
         }
       } catch {
-        // Fallback: use accounts from context
-        if (account?.accessibleAccounts) {
-          const accts = account.accessibleAccounts.map((a) => ({
-            id: a.id,
-            name: a.name,
-          }));
-          setClients(accts);
-          if (accts.length > 0) setClientId(accts[0].id);
-        }
+        // API fetch failed — fall through to context fallback
       }
+
+      // Fallback 1: use accessible accounts from context
+      if (accts.length === 0 && account?.accessibleAccounts?.length) {
+        accts = account.accessibleAccounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+        }));
+      }
+
+      // Fallback 2: use the currently selected account as last resort
+      if (accts.length === 0 && account?.selectedAccount) {
+        accts = [{ id: account.selectedAccount.id, name: account.selectedAccount.name }];
+      }
+
+      setClients(accts);
+
+      // Auto-select if only one client, or select first by default
+      if (accts.length >= 1) {
+        setClientId(accts[0].id);
+      }
+
+      setClientsLoading(false);
     };
     loadClients();
-  }, [account?.accessibleAccounts]);
+  }, [account?.accessibleAccounts, account?.selectedAccount]);
 
   const togglePlatform = (p: string) => {
     setPlatforms((prev) =>
@@ -138,6 +162,9 @@ export default function NewPresentationPage() {
             date_from: dateFrom,
             date_to: dateTo,
             platforms,
+            client_logo: clientLogo,
+            primary_color: primaryColor,
+            accent_color: accentColor,
           }),
         }
       );
@@ -265,17 +292,102 @@ export default function NewPresentationPage() {
             <label className="block text-sm font-medium text-text-primary mb-2">
               Select Client
             </label>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-base border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary-500"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            {clientsLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-surface-base border border-border-primary rounded-lg text-text-secondary">
+                <Loader className="w-4 h-4 animate-spin" />
+                Loading clients...
+              </div>
+            ) : clients.length === 1 ? (
+              <div className="px-3 py-2 bg-surface-base border border-border-primary rounded-lg text-text-primary font-medium">
+                {clients[0].name}
+              </div>
+            ) : (
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-base border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary-500"
+              >
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Client logo upload */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Client Logo (optional)
+            </label>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 px-4 py-2 bg-surface-base border border-border-primary rounded-lg text-text-secondary text-sm cursor-pointer hover:border-primary-500 transition-colors">
+                <ImageIcon className="w-4 h-4" />
+                {clientLogo ? "Change Logo" : "Upload Logo"}
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.svg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setClientLogo(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+              {clientLogo && (
+                <div className="flex items-center gap-2">
+                  <img
+                    src={clientLogo}
+                    alt="Client logo preview"
+                    className="h-10 w-10 object-contain rounded border border-border-primary bg-white p-0.5"
+                  />
+                  <button
+                    onClick={() => setClientLogo(null)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Brand color pickers */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Primary Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-10 h-10 rounded border border-border-primary cursor-pointer bg-transparent"
+                />
+                <span className="text-sm text-text-secondary font-mono">{primaryColor}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Accent Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="w-10 h-10 rounded border border-border-primary cursor-pointer bg-transparent"
+                />
+                <span className="text-sm text-text-secondary font-mono">{accentColor}</span>
+              </div>
+            </div>
           </div>
 
           {/* Date range */}

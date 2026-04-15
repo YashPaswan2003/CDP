@@ -81,12 +81,14 @@ export default function UploadPage() {
     setLogLines(["Starting analysis..."]);
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const formData = new FormData();
       formData.append("file", fileToAnalyze);
       formData.append("account_id", selectedAccountId || "");
 
       const res = await fetch(`${apiUrl}/api/upload/analyze`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
 
@@ -132,9 +134,13 @@ export default function UploadPage() {
     setError("");
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(`${apiUrl}/api/upload/confirm`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           upload_id: uploadId,
           account_id: selectedAccountId,
@@ -158,13 +164,16 @@ export default function UploadPage() {
 
   const pollUploadStatus = async () => {
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const maxPolls = 60;
       let pollCount = 0;
 
       const poll = async () => {
         if (pollCount >= maxPolls) return;
 
-        const res = await fetch(`${apiUrl}/api/upload/status/${uploadId}`);
+        const res = await fetch(`${apiUrl}/api/upload/status/${uploadId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const data = await res.json();
 
         setRowsImported(data.rows_imported || 0);

@@ -127,14 +127,16 @@ function PlatformSubCard({
         <h4 className="font-bold text-gray-900 text-sm">{platform}</h4>
         <div className="w-1 h-5 rounded-full" style={{ backgroundColor: accentColor }} />
       </div>
-      {metrics.map(m => (
-        <div key={m.label} className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
-          <span className="text-gray-500 text-sm">{m.label}</span>
-          <span className="text-gray-900 text-sm font-medium">{m.value}</span>
-        </div>
-      ))}
+      <div className={`grid ${metrics.length > 2 ? "grid-cols-2" : "grid-cols-1"} gap-x-4 gap-y-1`}>
+        {metrics.map(m => (
+          <div key={m.label} className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
+            <span className="text-gray-500 text-xs">{m.label}</span>
+            <span className="text-gray-900 text-xs font-medium">{m.value}</span>
+          </div>
+        ))}
+      </div>
 
-      {/* Analyze → Link */}
+      {/* Analyze Link */}
       <motion.a
         href={analyzeUrl}
         whileHover={{ x: 2 }}
@@ -162,27 +164,79 @@ function FunnelSection({
   // Get accent color based on stage
   const accentColor = stage === "tofu" ? "#5C6BC0" : stage === "mofu" ? "#7986CB" : "#F59E0B";
 
-  // Build platform sub-cards data based on stage
+  // Build platform sub-cards data based on stage — expanded metrics per platform
   const getPlatformMetrics = (platform: string) => {
-    const metrics = platformCards.find(p => p.platform === platform);
-    if (!metrics) return [];
+    const m = platformCards.find(p => p.platform === platform);
+    if (!m) return [];
+
+    // Helper formatters
+    const fmtAbbr = (v: number) => v >= 1_000_000 ? (v / 1_000_000).toFixed(1) + "M" : v >= 1_000 ? (v / 1_000).toFixed(0) + "K" : v.toFixed(0);
+    const fmtCur = (v: number) => formatCurrency(v, "INR");
+    const fmtPct = (v: number) => v.toFixed(2) + "%";
+
+    const ctr = m.impressions > 0 ? (m.clicks / m.impressions) * 100 : 0;
+    const cpc = m.clicks > 0 ? m.spend / m.clicks : 0;
+    const cpm = m.impressions > 0 ? (m.spend / m.impressions) * 1000 : 0;
+    const roas = m.spend > 0 ? m.revenue / m.spend : 0;
+    const cpa = m.conversions > 0 ? m.spend / m.conversions : 0;
+    const vtr = (m.views && m.impressions > 0) ? (m.views / m.impressions) * 100 : 0;
+    const cpv = (m.views && m.views > 0) ? m.spend / m.views : 0;
 
     if (stage === "tofu") {
-      return [
-        { label: "Impressions", value: (metrics.impressions / 1000000).toFixed(1) + "M" },
-        { label: "Reach", value: metrics.reach ? (metrics.reach / 1000000).toFixed(1) + "M" : "—" }
-      ];
+      if (platform === "google") {
+        return [
+          { label: "Impressions", value: fmtAbbr(m.impressions) },
+          { label: "Views", value: fmtAbbr(m.views || 0) },
+          { label: "CPM", value: fmtCur(cpm) },
+          { label: "VTR", value: fmtPct(vtr) },
+        ];
+      } else if (platform === "dv360") {
+        return [
+          { label: "Impressions", value: fmtAbbr(m.impressions) },
+          { label: "Reach", value: m.reach ? fmtAbbr(m.reach) : "—" },
+          { label: "Views", value: fmtAbbr(m.views || 0) },
+          { label: "CPV", value: fmtCur(cpv) },
+        ];
+      } else {
+        // meta
+        return [
+          { label: "Impressions", value: fmtAbbr(m.impressions) },
+          { label: "Reach", value: m.reach ? fmtAbbr(m.reach) : "—" },
+          { label: "Frequency", value: m.reach && m.reach > 0 ? (m.impressions / m.reach).toFixed(2) + "x" : "—" },
+          { label: "CPM", value: fmtCur(cpm) },
+        ];
+      }
     } else if (stage === "mofu") {
-      const ctrValue = metrics.impressions > 0 ? ((metrics.clicks / metrics.impressions) * 100).toFixed(2) : "0";
+      // All platforms: Clicks, CTR, CPC
       return [
-        { label: "Clicks", value: (metrics.clicks / 1000).toFixed(0) + "K" },
-        { label: "CTR", value: ctrValue + "%" }
+        { label: "Clicks", value: fmtAbbr(m.clicks) },
+        { label: "CTR", value: fmtPct(ctr) },
+        { label: "CPC", value: fmtCur(cpc) },
       ];
     } else {
-      return [
-        { label: "Conversions", value: (metrics.conversions / 1000).toFixed(1) + "K" },
-        { label: "Revenue", value: formatCurrency(metrics.revenue, "INR") }
-      ];
+      // BOFU
+      if (platform === "google") {
+        return [
+          { label: "Conversions", value: fmtAbbr(m.conversions) },
+          { label: "Revenue", value: fmtCur(m.revenue) },
+          { label: "ROAS", value: roas.toFixed(2) + "x" },
+          { label: "CPA", value: fmtCur(cpa) },
+        ];
+      } else if (platform === "dv360") {
+        return [
+          { label: "Conversions", value: fmtAbbr(m.conversions) },
+          { label: "Revenue", value: fmtCur(m.revenue) },
+          { label: "ROAS", value: roas.toFixed(2) + "x" },
+        ];
+      } else {
+        // meta
+        return [
+          { label: "Conversions", value: fmtAbbr(m.conversions) },
+          { label: "Revenue", value: fmtCur(m.revenue) },
+          { label: "ROAS", value: roas.toFixed(2) + "x" },
+          { label: "CPA", value: fmtCur(cpa) },
+        ];
+      }
     }
   };
 
@@ -294,6 +348,7 @@ export default function PortfolioPage() {
   const [trendStage, setTrendStage] = useState<"all" | "tofu" | "mofu" | "bofu">("all");
   const [trendPlatform, setTrendPlatform] = useState<"all" | "google" | "dv360" | "meta">("all");
   const [trendMetrics, setTrendMetrics] = useState<string[]>(["spend", "revenue"]);
+  const [trendCampaign, setTrendCampaign] = useState<string>("all");
 
   // Get month range
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -516,12 +571,24 @@ export default function PortfolioPage() {
   const trendDateFrom = dateFromTime.toISOString().split("T")[0]; // YYYY-MM-DD
   const trendDateTo = today.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  // Filter daily metrics by trend days, platform, and stage
+  // Derive campaign list for the filter dropdown
+  const campaignList: { name: string; platform: string }[] = (data?.campaigns || []).map((c: any) => ({
+    name: c.campaign_name,
+    platform: c.platform?.toLowerCase(),
+  }));
+
+  // Resolve campaign filter → platform constraint
+  const campaignPlatformFilter = trendCampaign !== "all"
+    ? campaignList.find(c => c.name === trendCampaign)?.platform || null
+    : null;
+
+  // Filter daily metrics by trend days, platform, stage, and campaign
   const filteredDailyMetrics = dailyMetrics.filter((m: any) => {
     const inRange = m.date >= trendDateFrom && m.date <= trendDateTo;
     const inPlatform = trendPlatform === "all" || m.platform === trendPlatform;
     const inStage = trendStage === "all" || m.funnel_stage === trendStage;
-    return inRange && inPlatform && inStage;
+    const inCampaign = !campaignPlatformFilter || m.platform === campaignPlatformFilter;
+    return inRange && inPlatform && inStage && inCampaign;
   });
 
   // Handle alert dismissal
@@ -708,7 +775,18 @@ export default function PortfolioPage() {
               key={stage}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setTrendStage(stage)}
+              onClick={() => {
+                setTrendStage(stage);
+                // Auto-switch metrics based on funnel stage
+                if (stage === "tofu") {
+                  setTrendMetrics(["impressions", "reach", "views"]);
+                } else if (stage === "mofu") {
+                  setTrendMetrics(["clicks", "ctr", "cpc"]);
+                } else if (stage === "bofu") {
+                  setTrendMetrics(["conversions", "revenue", "roas", "cpa"]);
+                }
+                // "all" keeps current user selection unchanged
+              }}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 trendStage === stage
                   ? "bg-indigo-600 text-white"
@@ -739,9 +817,24 @@ export default function PortfolioPage() {
           ))}
         </motion.div>
 
+        {/* Campaign Filter */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-gray-400">Campaign:</label>
+          <select
+            value={trendCampaign}
+            onChange={(e) => setTrendCampaign(e.target.value)}
+            className="bg-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Campaigns</option>
+            {campaignList.map((c) => (
+              <option key={c.name} value={c.name}>{c.name} ({c.platform})</option>
+            ))}
+          </select>
+        </div>
+
         {/* Metric Selector */}
         <motion.div className="flex gap-2 flex-wrap">
-          {["spend", "revenue", "impressions", "clicks", "conversions", "roas", "ctr", "cpc", "cpa"].map((metric) => (
+          {["spend", "revenue", "impressions", "clicks", "conversions", "roas", "ctr", "cpc", "cpa", "reach", "views"].map((metric) => (
             <motion.button
               key={metric}
               whileHover={{ scale: 1.05 }}
@@ -777,6 +870,8 @@ export default function PortfolioPage() {
                 { key: "ctr", name: "CTR", color: "#F43F5E" },
                 { key: "cpc", name: "CPC", color: "#A855F7" },
                 { key: "cpa", name: "CPA", color: "#EAB308" },
+                { key: "reach", name: "Reach", color: "#14B8A6" },
+                { key: "views", name: "Views", color: "#FB923C" },
               ].filter((dk) => trendMetrics.includes(dk.key))}
               height={300}
             />

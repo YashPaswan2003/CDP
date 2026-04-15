@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "@/lib/accountContext";
-import { getFlags, executeAction } from "@/lib/api";
+import { getFlags } from "@/lib/api";
 import {
   AlertCircle,
   AlertTriangle,
@@ -37,11 +37,6 @@ export default function MonitorOverviewPage() {
   }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
   const loadFlags = async () => {
     if (!selectedAccount?.id) return;
     try {
@@ -61,36 +56,6 @@ export default function MonitorOverviewPage() {
     loadFlags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccount?.id]);
-
-  const handleAction = async (
-    flag: Flag,
-    action: { type: string; label: string }
-  ) => {
-    if (!selectedAccount?.id) return;
-    try {
-      const entityId = flag.entities?.[0] || flag.metric;
-      const entityType = flag.entities?.length > 0 ? "campaign" : "metric";
-      const result = await executeAction(
-        selectedAccount.id,
-        action.type,
-        entityType,
-        entityId
-      );
-      if (result.success) {
-        setToast({
-          type: "success",
-          message: `${action.label} executed successfully`,
-        });
-        setTimeout(() => loadFlags(), 1500);
-      } else {
-        setToast({ type: "error", message: result.message || "Action failed" });
-      }
-    } catch {
-      setToast({ type: "error", message: "Failed to execute action" });
-    } finally {
-      setTimeout(() => setToast(null), 3000);
-    }
-  };
 
   const criticalCount = severityDistribution.high || 0;
   const warningCount = severityDistribution.medium || 0;
@@ -168,13 +133,12 @@ export default function MonitorOverviewPage() {
           </div>
           <div className="flex gap-2 flex-shrink-0">
             {flag.actions.slice(0, 2).map((action) => (
-              <button
+              <span
                 key={action.type}
-                onClick={() => handleAction(flag, action)}
-                className={`px-3 py-1.5 ${cfg.btnClass} text-white text-xs font-medium rounded transition-colors`}
+                className="inline-flex items-center px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-400 italic"
               >
-                {action.label}
-              </button>
+                Suggestion: {action.label}
+              </span>
             ))}
           </div>
         </div>
@@ -184,29 +148,12 @@ export default function MonitorOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`${
-            toast.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30"
-              : "bg-red-500/10 border-red-500/30"
-          } border rounded-lg p-3 flex items-center gap-3`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <AlertCircle className="w-4 h-4 text-red-400" />
-          )}
-          <p
-            className={`text-sm font-medium ${
-              toast.type === "success" ? "text-emerald-300" : "text-red-300"
-            }`}
-          >
-            {toast.message}
-          </p>
-        </div>
-      )}
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+        <a href="/dashboard" className="hover:text-gray-300 transition-colors">Portfolio</a>
+        <span>›</span>
+        <span className="text-gray-300">Monitor</span>
+      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">

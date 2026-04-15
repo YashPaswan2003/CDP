@@ -1,10 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input, Button } from "@/components";
-import { AlertCircle, Settings } from "lucide-react";
+import { AlertCircle, Settings, Bell } from "lucide-react";
+import { useAccount } from "@/lib/accountContext";
+import { getConfig, setConfig } from "@/lib/api";
 
 export default function SettingsPage() {
+  const { selectedAccount } = useAccount();
+
+  const [thresholds, setThresholds] = useState({
+    roas_threshold: 3.0,
+    cpa_threshold: 50,
+    frequency_threshold: 5.0,
+    quality_score_threshold: 7,
+    currency: "INR",
+  });
+  const [thresholdLoading, setThresholdLoading] = useState(false);
+  const [thresholdSaved, setThresholdSaved] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAccount) return;
+    setThresholdLoading(true);
+    getConfig(selectedAccount.id)
+      .then((cfg) => {
+        setThresholds({
+          roas_threshold: cfg.roas_threshold ?? 3.0,
+          cpa_threshold: cfg.cpa_threshold ?? 50,
+          frequency_threshold: cfg.frequency_threshold ?? 5.0,
+          quality_score_threshold: cfg.quality_score_threshold ?? 7,
+          currency: cfg.currency ?? "INR",
+        });
+      })
+      .catch(() => {})
+      .finally(() => setThresholdLoading(false));
+  }, [selectedAccount]);
+
+  const handleThresholdChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setThresholds((prev) => ({
+      ...prev,
+      [name]: type === "number" ? parseFloat(value) : value,
+    }));
+  };
+
+  const handleThresholdSave = async () => {
+    if (!selectedAccount) return;
+    setThresholdLoading(true);
+    try {
+      await setConfig(selectedAccount.id, thresholds);
+      setThresholdSaved(true);
+      setTimeout(() => setThresholdSaved(false), 3000);
+    } catch {
+      // ignore
+    } finally {
+      setThresholdLoading(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     email: "demo@example.com",
     name: "Marketing Manager",
@@ -142,6 +195,110 @@ export default function SettingsPage() {
           Settings saved successfully
         </div>
       )}
+
+      {/* Alert Thresholds */}
+      <div className="card space-y-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Bell className="w-5 h-5 text-primary-500" />
+          <div>
+            <h2 className="text-xl font-bold text-text-primary font-fira-code">
+              Alert Thresholds
+            </h2>
+            <p className="text-text-secondary text-sm mt-1">
+              Configure when alerts trigger for this account
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              ROAS Target
+            </label>
+            <input
+              type="number"
+              name="roas_threshold"
+              value={thresholds.roas_threshold}
+              onChange={handleThresholdChange}
+              step="0.1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              CPA Limit ({thresholds.currency})
+            </label>
+            <input
+              type="number"
+              name="cpa_threshold"
+              value={thresholds.cpa_threshold}
+              onChange={handleThresholdChange}
+              step="1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Frequency Limit
+            </label>
+            <input
+              type="number"
+              name="frequency_threshold"
+              value={thresholds.frequency_threshold}
+              onChange={handleThresholdChange}
+              step="0.1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Quality Score Min
+            </label>
+            <input
+              type="number"
+              name="quality_score_threshold"
+              value={thresholds.quality_score_threshold}
+              onChange={handleThresholdChange}
+              step="1"
+              min="1"
+              max="10"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-2">
+            Currency
+          </label>
+          <select
+            name="currency"
+            value={thresholds.currency}
+            onChange={handleThresholdChange}
+            className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+          >
+            <option value="INR">INR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="primary" onClick={handleThresholdSave} disabled={thresholdLoading}>
+            {thresholdLoading ? "Saving..." : "Save Thresholds"}
+          </Button>
+          {thresholdSaved && (
+            <span className="text-accent-success text-sm font-medium">
+              Thresholds saved successfully
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Danger Zone */}
       <div className="card border border-accent-error/30 bg-accent-error/5">

@@ -164,7 +164,7 @@ export function MonitorDiagnoseAct({ accountId }: MonitorDiagnoseActProps) {
           href="/dashboard/monitor"
           className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors"
         >
-          View Full Dashboard <ChevronRight className="w-4 h-4" />
+          View All Flags <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
 
