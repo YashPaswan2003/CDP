@@ -46,7 +46,7 @@ export function diagnose(
       severity: "critical",
       label: "Negative ROI",
       explanation: "Spending more than earning",
-      icon: "\uD83D\uDD34",
+      icon: "alert-circle",
     };
   }
 
@@ -56,7 +56,7 @@ export function diagnose(
       severity: "critical",
       label: "Traffic quality issue",
       explanation: "High cost clicks not converting",
-      icon: "\uD83D\uDD34",
+      icon: "alert-circle",
     };
   }
 
@@ -67,7 +67,7 @@ export function diagnose(
       label: "Landing page issue",
       explanation:
         "Good ad engagement but poor conversion \u2014 check landing page",
-      icon: "\uD83D\uDFE1",
+      icon: "alert-triangle",
     };
   }
 
@@ -81,7 +81,7 @@ export function diagnose(
       severity: "critical",
       label: "Budget bleed",
       explanation: "Overspending with poor returns",
-      icon: "\uD83D\uDD34",
+      icon: "alert-circle",
     };
   }
 
@@ -91,7 +91,7 @@ export function diagnose(
       severity: "warning",
       label: "Ad relevance issue",
       explanation: "Low engagement driving up costs",
-      icon: "\uD83D\uDFE1",
+      icon: "alert-triangle",
     };
   }
 
@@ -101,7 +101,7 @@ export function diagnose(
       severity: "critical",
       label: "Overpacing",
       explanation: "On track to exceed budget significantly",
-      icon: "\uD83D\uDD34",
+      icon: "alert-circle",
     };
   }
 
@@ -111,7 +111,7 @@ export function diagnose(
       severity: "warning",
       label: "Underpacing",
       explanation: "Significantly under-delivering",
-      icon: "\uD83D\uDFE1",
+      icon: "alert-triangle",
     };
   }
 
@@ -125,7 +125,7 @@ export function diagnose(
       severity: "opportunity",
       label: "Scale opportunity",
       explanation: "Strong returns with room to increase spend",
-      icon: "\uD83D\uDFE2",
+      icon: "trending-up",
     };
   }
 

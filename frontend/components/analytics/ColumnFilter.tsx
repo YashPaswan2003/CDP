@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X, TrendingDown, TrendingUp } from "lucide-react";
 
 /* ── ColumnFilter (inline in table header) ── */
 
@@ -162,27 +162,27 @@ export function QuickFilters({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={() => onQuickFilter("underperformers")}
-        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium transition-colors ${
           activeFilter === "underperformers"
             ? "bg-red-600/20 text-red-400 border border-red-500/40"
             : "bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600"
         }`}
       >
-        <span className="mr-1">{"\uD83D\uDD34"}</span> Underperformers
+        <TrendingDown className="w-3.5 h-3.5 mr-1" /> Underperformers
       </button>
       <button
         onClick={() => onQuickFilter("top")}
-        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium transition-colors ${
           activeFilter === "top"
             ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/40"
             : "bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600"
         }`}
       >
-        <span className="mr-1">{"\uD83D\uDFE2"}</span> Top Performers
+        <TrendingUp className="w-3.5 h-3.5 mr-1" /> Top Performers
       </button>
       <button
         onClick={() => onQuickFilter("clear")}
-        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-colors"
+        className="px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-colors"
       >
         Clear
       </button>
