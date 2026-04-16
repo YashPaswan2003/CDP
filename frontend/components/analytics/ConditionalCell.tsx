@@ -66,9 +66,9 @@ function resolveZone(
 }
 
 const zoneStyles: Record<Zone, string> = {
-  green: "bg-green-500/10 text-green-400",
-  amber: "bg-amber-500/10 text-amber-400",
-  red: "bg-red-500/10 text-red-400",
+  green: "text-emerald-400",
+  amber: "text-amber-400",
+  red: "text-red-400",
   neutral: "text-gray-300",
 };
 
@@ -105,7 +105,7 @@ export function ConditionalCell({
   return (
     <td
       className={cn(
-        "px-3 py-2 text-right text-sm whitespace-nowrap",
+        "px-3 py-2 text-right text-sm whitespace-nowrap tabular-nums",
         zoneStyles[zone]
       )}
     >
@@ -180,7 +180,7 @@ export function RowHealthDot({ roas, ctr, cvr, cpc, targets }: RowHealthDotProps
 
   return (
     <span
-      className={cn("inline-block w-2.5 h-2.5 rounded-full", dotColorMap[color])}
+      className={cn("inline-block w-2 h-2 rounded-full", dotColorMap[color], color === "red" && "animate-pulse")}
       title={labels[color]}
       role="status"
       aria-label={labels[color]}

@@ -162,27 +162,27 @@ export function QuickFilters({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={() => onQuickFilter("underperformers")}
-        className={`px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium transition-colors ${
+        className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium transition-all ${
           activeFilter === "underperformers"
             ? "bg-red-600/20 text-red-400 border border-red-500/40"
-            : "bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600"
+            : "text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50"
         }`}
       >
-        <TrendingDown className="w-3.5 h-3.5 mr-1" /> Underperformers
+        <TrendingDown className="w-3.5 h-3.5 mr-1.5" /> Underperformers
       </button>
       <button
         onClick={() => onQuickFilter("top")}
-        className={`px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium transition-colors ${
+        className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium transition-all ${
           activeFilter === "top"
             ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/40"
-            : "bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600"
+            : "text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50"
         }`}
       >
-        <TrendingUp className="w-3.5 h-3.5 mr-1" /> Top Performers
+        <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> Top Performers
       </button>
       <button
         onClick={() => onQuickFilter("clear")}
-        className="px-3 py-1.5 rounded-full text-sm cursor-pointer font-medium bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-colors"
+        className="inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50 transition-all"
       >
         Clear
       </button>

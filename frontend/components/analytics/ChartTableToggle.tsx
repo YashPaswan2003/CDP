@@ -94,10 +94,10 @@ export default function ChartTableToggle({
               <button
                 key={metric}
                 onClick={() => onChartMetricChange(metric)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
                   chartMetric === metric
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                    ? "bg-indigo-600 text-white ring-2 ring-indigo-500/20"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
                 }`}
               >
                 {getMetricLabel(metric)}
@@ -113,9 +113,9 @@ export default function ChartTableToggle({
             <button
               key={mode.key}
               onClick={() => onViewModeChange(mode.key)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
                 viewMode === mode.key
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-indigo-600 text-white ring-2 ring-indigo-500/20"
                   : "text-gray-400 hover:text-gray-200"
               }`}
             >
@@ -173,9 +173,9 @@ export default function ChartTableToggle({
               />
               <Bar dataKey={chartMetric} radius={[0, 6, 6, 0]}>
                 {sortedData.map((_entry, index) => {
-                  let fill = "#6366F1"; // indigo-500
-                  if (index === 0) fill = "#22C55E"; // green-500 for top
-                  if (index === sortedData.length - 1) fill = "#EF4444"; // red-500 for bottom
+                  let fill = "#818CF8"; // indigo-400
+                  if (index === 0) fill = "#6366F1"; // indigo-500 for top
+                  if (index === sortedData.length - 1) fill = "#A5B4FC"; // indigo-300 for bottom
                   return <Cell key={`cell-${index}`} fill={fill} />;
                 })}
               </Bar>

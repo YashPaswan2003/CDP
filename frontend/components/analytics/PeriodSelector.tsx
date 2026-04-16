@@ -15,9 +15,7 @@ interface PeriodSelectorProps {
 
 const PRESETS = [
   { label: "7D", days: 7 },
-  { label: "15D", days: 15 },
   { label: "30D", days: 30 },
-  { label: "60D", days: 60 },
   { label: "90D", days: 90 },
 ];
 
@@ -50,10 +48,10 @@ export default function PeriodSelector({
           <button
             key={preset.days}
             onClick={() => handlePresetClick(preset.days)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
               !isCustom && periodDays === preset.days
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-700 text-gray-400 hover:text-gray-200"
+                ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
+                : "text-gray-400 hover:text-white hover:bg-gray-800/50"
             }`}
           >
             {preset.label}
@@ -62,10 +60,10 @@ export default function PeriodSelector({
         {showCustom && (
           <button
             onClick={handleCustomClick}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
               isCustom
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-700 text-gray-400 hover:text-gray-200"
+                ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
+                : "text-gray-400 hover:text-white hover:bg-gray-800/50"
             }`}
           >
             Custom

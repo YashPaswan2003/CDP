@@ -470,7 +470,7 @@ export function AnalyticsBuilder() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
 
       {/* ── 1. Period Selector ── */}
       <PeriodSelector
@@ -682,23 +682,23 @@ export function AnalyticsBuilder() {
         <ChartContainer title={`${activeTab} Breakdown`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm whitespace-nowrap">
-              <thead>
-                <tr>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-950">
                   {/* Health dot column */}
-                  <th className="px-2 py-3 text-center text-gray-500 font-medium w-8" title="Row Health">
+                  <th className="px-2 py-3 text-center text-xs uppercase tracking-wider font-semibold text-gray-500 bg-gray-950 w-8" title="Row Health">
                     <span className="sr-only">Health</span>
                   </th>
                   {/* Entity name column */}
-                  <th className="px-4 py-3 text-left text-gray-500 font-medium">{activeTab}</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-wider font-semibold text-gray-500 bg-gray-950">{activeTab}</th>
                   {/* Metric columns with inline column filters */}
                   {headerConfigs.map(({ key, label }) => (
                     <th
                       key={key}
-                      className="px-3 py-3 text-right text-gray-500 font-medium select-none"
+                      className="px-3 py-3 text-right text-xs uppercase tracking-wider font-semibold text-gray-500 bg-gray-950 select-none"
                     >
                       <div className="inline-flex items-center gap-1">
                         <span
-                          className="cursor-pointer hover:text-gray-300"
+                          className="cursor-pointer hover:text-gray-300 transition-colors"
                           onClick={() => handleSort(key)}
                         >
                           {label}{" "}
@@ -717,9 +717,9 @@ export function AnalyticsBuilder() {
                     </th>
                   ))}
                   {/* Pacing column */}
-                  <th className="px-3 py-3 text-center text-gray-500 font-medium">Pacing</th>
+                  <th className="px-3 py-3 text-center text-xs uppercase tracking-wider font-semibold text-gray-500 bg-gray-950">Pacing</th>
                   {/* Diagnosis column */}
-                  <th className="px-3 py-3 text-left text-gray-500 font-medium">Diagnosis</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-wider font-semibold text-gray-500 bg-gray-950">Diagnosis</th>
                 </tr>
               </thead>
               <tbody>
@@ -795,6 +795,12 @@ export function AnalyticsBuilder() {
           </div>
         </ChartContainer>
       )}
+
+      {/* ── Results count ── */}
+      <div className="text-xs text-gray-500 tabular-nums">
+        Showing {filteredData.length} of {rawRows.length} results
+        {quickFilter && <span className="ml-2 text-indigo-400">· Filtered: {quickFilter}</span>}
+      </div>
 
       {/* ── 7. Drilldown Panel ── */}
       <DrilldownPanel
