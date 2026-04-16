@@ -10,7 +10,7 @@ import LineChart from "@/components/charts/LineChart";
 import { AlertStrip, type Alert } from "@/components/monitor/AlertStrip";
 import { RecommendationPanel, type Recommendation } from "@/components/ai/RecommendationPanel";
 import { getMockRecommendations } from "@/lib/mockData";
-import { HealthDot, HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
+import { HEALTH_THRESHOLDS } from "@/components/metrics/HealthDot";
 import { MonitorDiagnoseAct } from "@/components/MonitorDiagnoseAct";
 import { getConfig } from "@/lib/api";
 import { ChevronDown, Settings, TrendingUp, TrendingDown } from "lucide-react";
@@ -43,7 +43,7 @@ interface FunnelSectionProps {
   title: string;
   stage: "tofu" | "mofu" | "bofu";
   metrics: FunnelMetrics;
-  insight: string;
+  insight?: string;
   platformCards: PlatformMetrics[];
   selectedAccount?: any;
   monthFrom: string;
@@ -71,80 +71,30 @@ function createMetric(value: string, rawValue: number, healthVariation: number =
   };
 }
 
-interface MetricCardProps {
-  label: string;
-  value: string;
-  current?: number;
-  previous?: number;
-}
-
-function MetricCard({ label, value, current, previous }: MetricCardProps) {
-  // Calculate change percentage
-  const hasChange = current !== undefined && previous !== undefined && previous > 0;
-  const changePct = hasChange ? ((current! - previous!) / previous!) * 100 : 0;
-  const isPositive = changePct >= 0;
-  const changeColor = Math.abs(changePct) < 10 ? "text-accent-success" : isPositive ? "text-accent-success" : changePct < -20 ? "text-accent-error" : "text-accent-warning";
-
-  return (
-    <div className="bg-surface-elevated border border-border-primary shadow-sm rounded-xl p-4 space-y-1 min-w-0">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-xs text-text-secondary uppercase tracking-wide font-medium truncate flex-1">{label}</p>
-        {current !== undefined && previous !== undefined && (
-          <HealthDot current={current} previous={previous} size="sm" showTooltip={true} />
-        )}
-      </div>
-      <div className="flex items-baseline gap-2">
-        <p className="text-xl font-bold text-text-primary truncate">{value}</p>
-        {hasChange && Math.abs(changePct) > 0.5 && (
-          <span className={`text-xs font-semibold flex items-center gap-0.5 ${changeColor}`}>
-            {isPositive ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : (
-              <TrendingDown className="w-3 h-3" />
-            )}
-            {isPositive ? "+" : ""}{changePct.toFixed(0)}%
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function PlatformSubCard({
   platform,
-  metrics,
   accentColor,
   analyzeUrl,
 }: {
   platform: string;
-  metrics: { label: string; value: string }[];
+  metrics?: { label: string; value: string }[];
   accentColor: string;
   analyzeUrl: string;
 }) {
   return (
-    <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 flex-1">
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="font-bold text-gray-900 text-sm">{platform}</h4>
-        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: accentColor }} />
+    <div className="flex items-center justify-between p-3 rounded-lg bg-surface-elevated flex-1">
+      <div className="flex items-center gap-3">
+        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
+        <span className="text-xs font-semibold text-text-primary">{platform}</span>
       </div>
-      <div className={`grid ${metrics.length > 2 ? "grid-cols-2" : "grid-cols-1"} gap-x-4 gap-y-1`}>
-        {metrics.map(m => (
-          <div key={m.label} className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
-            <span className="text-gray-500 text-xs">{m.label}</span>
-            <span className="text-gray-900 text-xs font-medium">{m.value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Analyze Link */}
-      <motion.a
+      <a
         href={analyzeUrl}
-        whileHover={{ x: 2 }}
-        className="inline-block mt-3 text-sm font-medium transition-colors hover:opacity-80"
+        className="text-[11px] font-bold uppercase tracking-wide transition-colors hover:opacity-80"
         style={{ color: accentColor }}
       >
-        Analyze →
-      </motion.a>
+        Analyze
+      </a>
     </div>
   );
 }
@@ -155,7 +105,7 @@ function FunnelSection({
   title,
   stage,
   metrics,
-  insight,
+  insight: _insight,
   platformCards,
   selectedAccount,
   monthFrom,
@@ -253,76 +203,70 @@ function FunnelSection({
     return `${basePath}?${params.toString()}`;
   };
 
+  // Phase number based on stage
+  const phaseNum = stage === "tofu" ? "01" : stage === "mofu" ? "02" : "03";
+  const phaseLabel = stage === "tofu" ? "Top of Funnel" : stage === "mofu" ? "Mid of Funnel" : "Bottom of Funnel";
+  const indent = stage === "tofu" ? "" : stage === "mofu" ? "ml-8" : "ml-16";
+  const borderColor = stage === "tofu" ? "" : stage === "mofu" ? "border-l-4 border-secondary-500" : "border-l-4 border-primary-500";
+
+  // Pick top 3 metrics for inline display
+  const topMetrics = Object.entries(metrics).slice(0, 3);
+
   return (
     <motion.div
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
-      className="space-y-4"
+      className={`${indent}`}
     >
-      {/* Section Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: accentColor }} />
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-          <p className="text-gray-500 text-sm">{insight}</p>
+      <div className={`bg-surface-base rounded-xl p-6 border border-border-primary transition-all hover:shadow-md ${borderColor}`}>
+        <div className="flex gap-8">
+          {/* Stage Label */}
+          <div className="w-40 flex flex-col justify-center flex-shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accentColor }}>Phase {phaseNum}</span>
+            <h3 className="text-lg font-bold text-text-primary">{title.split(" — ")[1] || title}</h3>
+            <p className="text-xs text-text-secondary">{phaseLabel}</p>
+          </div>
+
+          {/* Inline Metrics */}
+          <div className="flex-1 grid grid-cols-3 gap-4 border-l border-border-primary pl-8">
+            {topMetrics.map(([key, metric]) => {
+              const hasChange = metric.current !== undefined && metric.previous !== undefined && metric.previous > 0;
+              const changePct = hasChange ? ((metric.current - metric.previous) / metric.previous) * 100 : 0;
+              const isPositive = changePct >= 0;
+
+              return (
+                <div key={key}>
+                  <div className="text-[11px] text-text-secondary mb-1">{key}</div>
+                  <div className="text-2xl font-bold text-text-primary">{metric.value}</div>
+                  {hasChange && Math.abs(changePct) > 0.5 && (
+                    <div className={`text-[11px] flex items-center gap-1 font-medium ${isPositive ? "text-accent-success" : "text-accent-error"}`}>
+                      {isPositive ? (
+                        <TrendingUp className="w-3 h-3" />
+                      ) : (
+                        <TrendingDown className="w-3 h-3" />
+                      )}
+                      {isPositive ? "+" : ""}{changePct.toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Summary Metrics Grid */}
-      <div className="grid grid-cols-4 gap-3">
-        {Object.entries(metrics).slice(0, 4).map(([key, metric]) => (
-          <MetricCard
-            key={key}
-            label={key}
-            value={metric.value}
-            current={metric.current}
-            previous={metric.previous}
-          />
-        ))}
-      </div>
-
-      {/* Additional Metrics Grid */}
-      <div className="grid grid-cols-4 gap-3">
-        {Object.entries(metrics).slice(4, 8).map(([key, metric]) => (
-          <MetricCard
-            key={key}
-            label={key}
-            value={metric.value}
-            current={metric.current}
-            previous={metric.previous}
-          />
-        ))}
-        {Object.entries(metrics).slice(8).length > 0 ? (
-          Object.entries(metrics).slice(8).map(([key, metric]) => (
-            <MetricCard
-              key={key}
-              label={key}
-              value={metric.value}
-              current={metric.current}
-              previous={metric.previous}
+        {/* Platform Row */}
+        <div className="mt-6 pt-6 border-t border-border-primary grid grid-cols-3 gap-4">
+          {platformCards.filter(p => p.isActive).map((platform) => (
+            <PlatformSubCard
+              key={platform.platform}
+              platform={platform.name}
+              metrics={getPlatformMetrics(platform.platform)}
+              accentColor={accentColor}
+              analyzeUrl={getAnalyzeUrl(platform.platform as "google" | "dv360" | "meta")}
             />
-          ))
-        ) : (
-          <>
-            {[...Array(Math.max(0, 4 - Object.entries(metrics).slice(4).length))].map((_, i) => (
-              <div key={`empty-${i}`} />
-            ))}
-          </>
-        )}
-      </div>
-
-      {/* Platform Sub-Cards */}
-      <div className="flex gap-3">
-        {platformCards.filter(p => p.isActive).map((platform) => (
-          <PlatformSubCard
-            key={platform.platform}
-            platform={platform.name}
-            metrics={getPlatformMetrics(platform.platform)}
-            accentColor={accentColor}
-            analyzeUrl={getAnalyzeUrl(platform.platform as "google" | "dv360" | "meta")}
-          />
-        ))}
+          ))}
+        </div>
       </div>
     </motion.div>
   );
@@ -400,7 +344,7 @@ export default function PortfolioPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-center text-gray-500 py-12"
+        className="text-center text-text-secondary py-12"
       >
         Loading dashboard...
       </motion.div>
@@ -412,7 +356,7 @@ export default function PortfolioPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-center text-gray-500 py-12"
+        className="text-center text-text-secondary py-12"
       >
         No data available
       </motion.div>
@@ -645,9 +589,9 @@ export default function PortfolioPage() {
             >
               {selectedAccount?.name?.split(" ").map((w) => w[0]).join("")}
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">{selectedAccount?.name}</h1>
+            <h1 className="text-4xl font-bold text-text-primary">{selectedAccount?.name}</h1>
           </div>
-          <div className="flex items-center gap-3 text-gray-500 ml-13">
+          <div className="flex items-center gap-3 text-text-secondary ml-13">
             <span>{formatCurrency(data.total_spend, selectedAccount?.currency)} spent</span>
             <span>•</span>
             {/* Month Picker Button */}
@@ -655,7 +599,7 @@ export default function PortfolioPage() {
               <motion.button
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2 px-3 py-1 rounded-lg bg-surface-base border border-border-primary hover:bg-surface-hover transition-colors"
               >
                 <span>{monthLabel}</span>
                 <ChevronDown className="w-4 h-4" />
@@ -666,7 +610,7 @@ export default function PortfolioPage() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full mt-2 left-0 z-50 bg-white border border-gray-200 shadow-lg rounded-lg p-3 w-48"
+                  className="absolute top-full mt-2 left-0 z-50 bg-surface-base border border-border-primary shadow-lg rounded-lg p-3 w-48"
                 >
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {monthNames.map((month, idx) => (
@@ -679,8 +623,8 @@ export default function PortfolioPage() {
                         }}
                         className={`px-2 py-1 rounded text-sm font-medium transition-all ${
                           selectedMonth.month === idx + 1
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                            ? "bg-primary-500 text-white"
+                            : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                         }`}
                       >
                         {month.slice(0, 3)}
@@ -690,7 +634,7 @@ export default function PortfolioPage() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     onClick={() => setShowMonthPicker(false)}
-                    className="w-full px-3 py-1 rounded text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                    className="w-full px-3 py-1 rounded text-sm text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
                   >
                     Close
                   </motion.button>
@@ -701,41 +645,52 @@ export default function PortfolioPage() {
         </div>
       </motion.div>
 
-      {/* TOFU Section */}
-      <FunnelSection
-        title="Top of Funnel — Awareness"
-        stage="tofu"
-        metrics={tofuMetrics}
-        insight={tofuInsight}
-        platformCards={Object.values(platformMetrics)}
-        selectedAccount={selectedAccount}
-        monthFrom={monthFrom}
-        monthTo={monthTo}
-      />
+      {/* Full Funnel Section */}
+      <section className="bg-surface-elevated rounded-2xl p-8">
+        <div className="flex items-center gap-4 mb-8">
+          <h2 className="text-xl font-semibold text-text-primary">{selectedAccount?.name} (All Accounts)</h2>
+          <div className="h-px flex-1 bg-border-primary opacity-40" />
+          <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Full Funnel Analysis</span>
+        </div>
 
-      {/* MOFU Section */}
-      <FunnelSection
-        title="Middle of Funnel — Consideration"
-        stage="mofu"
-        metrics={mofuMetrics}
-        insight={mofuInsight}
-        platformCards={Object.values(platformMetrics)}
-        selectedAccount={selectedAccount}
-        monthFrom={monthFrom}
-        monthTo={monthTo}
-      />
+        <div className="space-y-6">
+          {/* TOFU Section */}
+          <FunnelSection
+            title="Top of Funnel — Awareness"
+            stage="tofu"
+            metrics={tofuMetrics}
+            insight={tofuInsight}
+            platformCards={Object.values(platformMetrics)}
+            selectedAccount={selectedAccount}
+            monthFrom={monthFrom}
+            monthTo={monthTo}
+          />
 
-      {/* BOFU Section */}
-      <FunnelSection
-        title="Bottom of Funnel — Conversion"
-        stage="bofu"
-        metrics={bofuMetrics}
-        insight={bofuInsight}
-        platformCards={Object.values(platformMetrics)}
-        selectedAccount={selectedAccount}
-        monthFrom={monthFrom}
-        monthTo={monthTo}
-      />
+          {/* MOFU Section */}
+          <FunnelSection
+            title="Middle of Funnel — Consideration"
+            stage="mofu"
+            metrics={mofuMetrics}
+            insight={mofuInsight}
+            platformCards={Object.values(platformMetrics)}
+            selectedAccount={selectedAccount}
+            monthFrom={monthFrom}
+            monthTo={monthTo}
+          />
+
+          {/* BOFU Section */}
+          <FunnelSection
+            title="Bottom of Funnel — Conversion"
+            stage="bofu"
+            metrics={bofuMetrics}
+            insight={bofuInsight}
+            platformCards={Object.values(platformMetrics)}
+            selectedAccount={selectedAccount}
+            monthFrom={monthFrom}
+            monthTo={monthTo}
+          />
+        </div>
+      </section>
 
       {/* Performance Trend */}
       <motion.div
@@ -746,7 +701,7 @@ export default function PortfolioPage() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Performance Trend</h3>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">Performance Trend</h3>
           </div>
           {/* Trend Days Selector */}
           <motion.div className="flex gap-2">
@@ -758,8 +713,8 @@ export default function PortfolioPage() {
                 onClick={() => setTrendDays(days)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   trendDays === days
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-700 text-gray-400"
+                    ? "bg-primary-500 text-white"
+                    : "bg-surface-elevated text-text-secondary hover:bg-surface-hover"
                 }`}
               >
                 {days}D
@@ -789,8 +744,8 @@ export default function PortfolioPage() {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 trendStage === stage
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-400"
+                  ? "bg-primary-500 text-white"
+                  : "bg-surface-elevated text-text-secondary hover:bg-surface-hover"
               }`}
             >
               {stage === "all" ? "All Stages" : stage.toUpperCase()}
@@ -808,8 +763,8 @@ export default function PortfolioPage() {
               onClick={() => setTrendPlatform(platform)}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 trendPlatform === platform
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-400"
+                  ? "bg-primary-500 text-white"
+                  : "bg-surface-elevated text-text-secondary hover:bg-surface-hover"
               }`}
             >
               {platform === "all" ? "All Platforms" : platform === "dv360" ? "DV360" : platform.charAt(0).toUpperCase() + platform.slice(1)}
@@ -819,11 +774,11 @@ export default function PortfolioPage() {
 
         {/* Campaign Filter */}
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-400">Campaign:</label>
+          <label className="text-sm font-medium text-text-secondary">Campaign:</label>
           <select
             value={trendCampaign}
             onChange={(e) => setTrendCampaign(e.target.value)}
-            className="bg-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-surface-elevated text-text-primary text-sm rounded-lg px-3 py-2 border border-border-primary focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Campaigns</option>
             {campaignList.map((c) => (
@@ -846,8 +801,8 @@ export default function PortfolioPage() {
               }}
               className={`px-3 py-1 rounded text-sm font-medium transition-all ${
                 trendMetrics.includes(metric)
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-400"
+                  ? "bg-primary-500 text-white"
+                  : "bg-surface-elevated text-text-secondary hover:bg-surface-hover"
               }`}
             >
               {metric.charAt(0).toUpperCase() + metric.slice(1)}
@@ -876,7 +831,7 @@ export default function PortfolioPage() {
               height={300}
             />
           ) : (
-            <p className="text-center text-gray-500 py-8">No data for selected filters</p>
+            <p className="text-center text-text-secondary py-8">No data for selected filters</p>
           )}
         </ChartContainer>
       </motion.div>
