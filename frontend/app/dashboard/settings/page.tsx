@@ -16,6 +16,16 @@ export default function SettingsPage() {
     quality_score_threshold: 7,
     currency: "INR",
   });
+
+  const [benchmarks, setBenchmarks] = useState({
+    ctr_target: 5.0,
+    cpc_target: 25,
+    cvr_target: 1.0,
+    roas_target: 3.0,
+    cpa_target: 500,
+  });
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false);
+  const [benchmarkSaved, setBenchmarkSaved] = useState(false);
   const [thresholdLoading, setThresholdLoading] = useState(false);
   const [thresholdSaved, setThresholdSaved] = useState(false);
 
@@ -30,6 +40,13 @@ export default function SettingsPage() {
           frequency_threshold: cfg.frequency_threshold ?? 5.0,
           quality_score_threshold: cfg.quality_score_threshold ?? 7,
           currency: cfg.currency ?? "INR",
+        });
+        setBenchmarks({
+          ctr_target: cfg.ctr_target ?? 5.0,
+          cpc_target: cfg.cpc_target ?? 25,
+          cvr_target: cfg.cvr_target ?? 1.0,
+          roas_target: cfg.roas_target ?? 3.0,
+          cpa_target: cfg.cpa_target ?? 500,
         });
       })
       .catch(() => {})
@@ -48,13 +65,35 @@ export default function SettingsPage() {
     if (!selectedAccount) return;
     setThresholdLoading(true);
     try {
-      await setConfig(selectedAccount.id, thresholds);
+      await setConfig(selectedAccount.id, { ...thresholds, ...benchmarks });
       setThresholdSaved(true);
       setTimeout(() => setThresholdSaved(false), 3000);
     } catch {
       // ignore
     } finally {
       setThresholdLoading(false);
+    }
+  };
+
+  const handleBenchmarkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBenchmarks((prev) => ({
+      ...prev,
+      [name]: parseFloat(value),
+    }));
+  };
+
+  const handleBenchmarkSave = async () => {
+    if (!selectedAccount) return;
+    setBenchmarkLoading(true);
+    try {
+      await setConfig(selectedAccount.id, { ...thresholds, ...benchmarks });
+      setBenchmarkSaved(true);
+      setTimeout(() => setBenchmarkSaved(false), 3000);
+    } catch {
+      // ignore
+    } finally {
+      setBenchmarkLoading(false);
     }
   };
 
@@ -295,6 +334,109 @@ export default function SettingsPage() {
           {thresholdSaved && (
             <span className="text-accent-success text-sm font-medium">
               Thresholds saved successfully
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Performance Benchmarks */}
+      <div className="card space-y-6">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertCircle className="w-5 h-5 text-primary-500" />
+          <div>
+            <h2 className="text-xl font-bold text-text-primary font-fira-code">
+              Performance Benchmarks
+            </h2>
+            <p className="text-text-secondary text-sm mt-1">
+              Set target KPIs to measure campaign performance against
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              CTR Target (%)
+            </label>
+            <input
+              type="number"
+              name="ctr_target"
+              value={benchmarks.ctr_target}
+              onChange={handleBenchmarkChange}
+              step="0.1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              CPC Target ({thresholds.currency === "INR" ? "\u20B9" : "$"})
+            </label>
+            <input
+              type="number"
+              name="cpc_target"
+              value={benchmarks.cpc_target}
+              onChange={handleBenchmarkChange}
+              step="1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              CVR Target (%)
+            </label>
+            <input
+              type="number"
+              name="cvr_target"
+              value={benchmarks.cvr_target}
+              onChange={handleBenchmarkChange}
+              step="0.1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              ROAS Target (x)
+            </label>
+            <input
+              type="number"
+              name="roas_target"
+              value={benchmarks.roas_target}
+              onChange={handleBenchmarkChange}
+              step="0.1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              CPA Target ({thresholds.currency === "INR" ? "\u20B9" : "$"})
+            </label>
+            <input
+              type="number"
+              name="cpa_target"
+              value={benchmarks.cpa_target}
+              onChange={handleBenchmarkChange}
+              step="1"
+              min="0"
+              className="w-full px-4 py-2 bg-surface-hover border border-border-primary rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="primary" onClick={handleBenchmarkSave} disabled={benchmarkLoading}>
+            {benchmarkLoading ? "Saving..." : "Save Benchmarks"}
+          </Button>
+          {benchmarkSaved && (
+            <span className="text-accent-success text-sm font-medium">
+              Benchmarks saved successfully
             </span>
           )}
         </div>
