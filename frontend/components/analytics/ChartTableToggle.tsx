@@ -96,8 +96,8 @@ export default function ChartTableToggle({
                 onClick={() => onChartMetricChange(metric)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
                   chartMetric === metric
-                    ? "bg-indigo-600 text-white ring-2 ring-indigo-500/20"
-                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                    ? "bg-primary-500 text-white ring-2 ring-primary-500/20"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
                 }`}
               >
                 {getMetricLabel(metric)}
@@ -108,15 +108,15 @@ export default function ChartTableToggle({
         {!showChart && <div />}
 
         {/* View mode toggle */}
-        <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
+        <div className="flex items-center bg-surface-elevated rounded-lg p-0.5">
           {VIEW_MODES.map((mode) => (
             <button
               key={mode.key}
               onClick={() => onViewModeChange(mode.key)}
               className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
                 viewMode === mode.key
-                  ? "bg-indigo-600 text-white ring-2 ring-indigo-500/20"
-                  : "text-gray-400 hover:text-gray-200"
+                  ? "bg-primary-500 text-white ring-2 ring-primary-500/20"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               {mode.label}
@@ -127,14 +127,14 @@ export default function ChartTableToggle({
 
       {/* Chart */}
       {showChart && sortedData.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+        <div className="bg-surface-base border border-border-primary rounded-xl p-4">
           <ResponsiveContainer width="100%" height={300}>
             <RechartsBarChart
               data={sortedData}
               layout="vertical"
               margin={{ top: 5, right: 30, left: 110, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
               <XAxis
                 type="number"
                 stroke="#4B5563"
@@ -154,12 +154,12 @@ export default function ChartTableToggle({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#111827",
-                  border: "1px solid #374151",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E5E7EB",
                   borderRadius: "8px",
-                  color: "#F9FAFB",
+                  color: "#1F2937",
                 }}
-                labelStyle={{ color: "#D1D5DB" }}
+                labelStyle={{ color: "#6B7280" }}
                 formatter={(value: number) => [
                   formatTooltipValue(value, chartMetric, currency),
                   getMetricLabel(chartMetric),

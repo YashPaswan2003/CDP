@@ -409,8 +409,8 @@ export default function GoogleAdsAnalytics() {
               onClick={() => handlePeriodChange(preset.days)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 !customDates && periodDays === preset.days
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-400 hover:text-gray-200"
+                  ? "bg-primary-500 text-white"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
               }`}
             >
               {preset.label}
@@ -420,8 +420,8 @@ export default function GoogleAdsAnalytics() {
             onClick={() => setCustomDates(true)}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               customDates
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-700 text-gray-400 hover:text-gray-200"
+                ? "bg-primary-500 text-white"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
             }`}
           >
             Custom

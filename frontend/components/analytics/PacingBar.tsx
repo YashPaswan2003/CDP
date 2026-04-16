@@ -62,7 +62,7 @@ export function PacingBar({
   return (
     <div className={cn("flex flex-col gap-1", compact ? "w-full" : "w-28")}>
       {/* Track */}
-      <div className="bg-gray-800 rounded-full h-2 w-full overflow-hidden">
+      <div className="bg-surface-active rounded-full h-2 w-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all", barColors[zone])}
           style={{ width: `${fillPct}%` }}
@@ -71,7 +71,7 @@ export function PacingBar({
 
       {/* Text label */}
       {!compact && (
-        <span className="text-[10px] text-gray-400 leading-tight">
+        <span className="text-[10px] text-text-tertiary leading-tight">
           {spentFmt} / {budgetFmt} ({pctLabel})
         </span>
       )}

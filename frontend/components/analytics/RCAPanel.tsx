@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { X } from "lucide-react";
+import { X, AlertCircle, AlertTriangle, CheckCircle, Search } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -49,11 +49,11 @@ function formatMetricValue(metric: string, value: number, currency?: string): st
   }
 }
 
-function severityIcon(contribution: number): string {
+function SeverityIcon({ contribution }: { contribution: number }) {
   const abs = Math.abs(contribution);
-  if (abs >= 30) return "\uD83D\uDD34"; // red circle
-  if (abs >= 15) return "\uD83D\uDFE1"; // yellow circle
-  return "\uD83D\uDFE2"; // green circle
+  if (abs >= 30) return <AlertCircle className="w-4 h-4 text-accent-error flex-shrink-0" />;
+  if (abs >= 15) return <AlertTriangle className="w-4 h-4 text-accent-warning flex-shrink-0" />;
+  return <CheckCircle className="w-4 h-4 text-accent-success flex-shrink-0" />;
 }
 
 function generateSuggestions(topDrivers: RCADimension[], metric: string): string[] {
@@ -130,16 +130,16 @@ export default function RCAPanel({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-gray-900 border border-border-primary rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-surface-base border border-border-primary rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary sticky top-0 bg-gray-900 z-10">
-          <h2 className="text-lg font-bold text-text-primary font-fira-code">
-            {"\uD83D\uDD0D"} Investigating {metric} Decline
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary sticky top-0 bg-surface-base z-10">
+          <h2 className="text-lg font-bold text-text-primary font-fira-code flex items-center gap-2">
+            <Search className="w-5 h-5 text-primary-400" /> Investigating {metric} Decline
           </h2>
           <button
             onClick={onClose}
@@ -182,7 +182,7 @@ export default function RCAPanel({
                   layout="vertical"
                   margin={{ top: 5, right: 60, left: 10, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
                   <XAxis
                     type="number"
                     tick={{ fill: "#9ca3af", fontSize: 11 }}
@@ -197,10 +197,10 @@ export default function RCAPanel({
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E5E7EB",
                       borderRadius: "8px",
-                      color: "#f3f4f6",
+                      color: "#1F2937",
                       fontSize: 12,
                     }}
                     formatter={(value: number) => [`${value.toFixed(1)}%`, "Contribution"]}
@@ -241,7 +241,7 @@ export default function RCAPanel({
                     key={i}
                     className="bg-surface-hover rounded-lg p-3 border border-border-primary flex items-start gap-3"
                   >
-                    <span className="text-lg mt-0.5">{severityIcon(d.contribution)}</span>
+                    <SeverityIcon contribution={d.contribution} />
                     <div className="min-w-0">
                       <p className="text-text-primary text-sm">
                         {i === 0 ? (

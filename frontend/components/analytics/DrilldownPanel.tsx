@@ -98,7 +98,7 @@ export default function DrilldownPanel({
     <>
       {/* Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
@@ -107,21 +107,21 @@ export default function DrilldownPanel({
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed top-0 right-0 z-50 h-full w-[420px] max-w-[90vw] bg-gray-900 border-l border-gray-800 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-50 h-full w-[420px] max-w-[90vw] bg-surface-base border-l border-border-primary shadow-2xl transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-gray-800">
+        <div className="flex items-start justify-between p-5 border-b border-border-primary">
           <div className="min-w-0 pr-4">
-            <h2 className="text-lg font-bold text-white truncate">{entityName}</h2>
-            <p className="text-sm text-gray-400 mt-0.5">
-              from <span className="text-indigo-400">{entityTab}</span> breakdown
+            <h2 className="text-lg font-bold text-text-primary truncate">{entityName}</h2>
+            <p className="text-sm text-text-secondary mt-0.5">
+              from <span className="text-primary-400">{entityTab}</span> breakdown
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className="flex-shrink-0 p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
             aria-label="Close panel"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -141,23 +141,23 @@ export default function DrilldownPanel({
 
             return (
               <div key={tabKey}>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                   By {tabKey}
                 </h3>
-                <div className="overflow-hidden rounded-lg border border-gray-800">
+                <div className="overflow-hidden rounded-lg border border-border-primary">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-800/80">
-                        <th className="px-3 py-2 text-left text-gray-400 font-medium text-xs">
+                      <tr className="bg-surface-elevated">
+                        <th className="px-3 py-2 text-left text-text-secondary font-medium text-xs">
                           Name
                         </th>
-                        <th className="px-3 py-2 text-right text-gray-400 font-medium text-xs">
+                        <th className="px-3 py-2 text-right text-text-secondary font-medium text-xs">
                           Spend
                         </th>
-                        <th className="px-3 py-2 text-right text-gray-400 font-medium text-xs">
+                        <th className="px-3 py-2 text-right text-text-secondary font-medium text-xs">
                           ROAS
                         </th>
-                        <th className="px-3 py-2 text-right text-gray-400 font-medium text-xs">
+                        <th className="px-3 py-2 text-right text-text-secondary font-medium text-xs">
                           Conv.
                         </th>
                       </tr>
@@ -166,20 +166,20 @@ export default function DrilldownPanel({
                       {rows.map((row, i) => (
                         <tr
                           key={row.name}
-                          className={`border-t border-gray-800 ${
-                            i % 2 === 0 ? "bg-gray-800/50" : "bg-gray-900"
+                          className={`border-t border-border-primary ${
+                            i % 2 === 0 ? "bg-surface-elevated/50" : "bg-surface-base"
                           }`}
                         >
-                          <td className="px-3 py-2 text-gray-200 font-medium truncate max-w-[140px]">
+                          <td className="px-3 py-2 text-text-primary font-medium truncate max-w-[140px]">
                             {row.name}
                           </td>
-                          <td className="px-3 py-2 text-right text-gray-300">
+                          <td className="px-3 py-2 text-right text-text-secondary">
                             {formatSpend(row.spend, cur)}
                           </td>
-                          <td className="px-3 py-2 text-right text-gray-300">
+                          <td className="px-3 py-2 text-right text-text-secondary">
                             {formatROAS(row.roas)}
                           </td>
-                          <td className="px-3 py-2 text-right text-gray-300">
+                          <td className="px-3 py-2 text-right text-text-secondary">
                             {formatNumber(row.conversions)}
                           </td>
                         </tr>
@@ -193,8 +193,8 @@ export default function DrilldownPanel({
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800 bg-gray-900">
-          <button className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border-primary bg-surface-base">
+          <button className="text-sm text-primary-400 hover:text-primary-500 font-medium transition-colors">
             View full breakdown &rarr;
           </button>
         </div>

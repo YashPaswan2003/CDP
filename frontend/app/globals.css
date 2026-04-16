@@ -101,3 +101,18 @@ button:disabled {
   border-color: #5C6BC0;
   box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
 }
+
+/* Dark mode overrides (activated via class="dark" on html/body) */
+.dark body {
+  background: #111827;
+  color: #E5E7EB;
+}
+
+.dark .card {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.dark .card:hover {
+  border-color: #4B5563;
+}

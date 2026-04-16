@@ -69,7 +69,7 @@ const zoneStyles: Record<Zone, string> = {
   green: "text-emerald-400",
   amber: "text-amber-400",
   red: "text-red-400",
-  neutral: "text-gray-300",
+  neutral: "text-text-primary",
 };
 
 function changeBadge(current: number, previous: number): React.ReactNode {

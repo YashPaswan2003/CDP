@@ -74,8 +74,8 @@ export function ColumnFilter({
         onClick={() => setOpen(!open)}
         className={`p-0.5 rounded transition-colors ${
           isActive
-            ? "text-indigo-400 hover:text-indigo-300"
-            : "text-gray-500 hover:text-gray-300"
+            ? "text-primary-400 hover:text-primary-500"
+            : "text-text-tertiary hover:text-text-secondary"
         }`}
         title={`Filter ${columnName}`}
       >
@@ -83,29 +83,29 @@ export function ColumnFilter({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-xl z-50 min-w-[180px]">
-          <p className="text-xs text-gray-400 mb-2 font-medium">
+        <div className="absolute top-full left-0 mt-1 bg-surface-base border border-border-primary rounded-lg p-3 shadow-xl z-50 min-w-[180px]">
+          <p className="text-xs text-text-secondary mb-2 font-medium">
             Filter: {columnName}
           </p>
           <div className="flex flex-col gap-2 mb-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-0.5">Min</label>
+              <label className="block text-xs text-text-tertiary mb-0.5">Min</label>
               <input
                 type="number"
                 value={min}
                 onChange={(e) => setMin(e.target.value)}
                 placeholder="0"
-                className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none"
+                className="w-full px-2 py-1 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-0.5">Max</label>
+              <label className="block text-xs text-text-tertiary mb-0.5">Max</label>
               <input
                 type="number"
                 value={max}
                 onChange={(e) => setMax(e.target.value)}
                 placeholder="--"
-                className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none"
+                className="w-full px-2 py-1 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 outline-none"
               />
             </div>
           </div>
@@ -118,7 +118,7 @@ export function ColumnFilter({
             </button>
             <button
               onClick={handleClear}
-              className="flex-1 px-2 py-1 bg-gray-700 text-gray-300 text-xs font-medium rounded hover:bg-gray-600 transition-colors"
+              className="flex-1 px-2 py-1 bg-surface-elevated text-text-secondary text-xs font-medium rounded hover:bg-surface-hover transition-colors"
             >
               Clear
             </button>
@@ -165,7 +165,7 @@ export function QuickFilters({
         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium transition-all ${
           activeFilter === "underperformers"
             ? "bg-red-600/20 text-red-400 border border-red-500/40"
-            : "text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50"
+            : "text-text-secondary border border-border-primary hover:text-text-primary hover:border-border-strong hover:bg-surface-hover"
         }`}
       >
         <TrendingDown className="w-3.5 h-3.5 mr-1.5" /> Underperformers
@@ -175,14 +175,14 @@ export function QuickFilters({
         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium transition-all ${
           activeFilter === "top"
             ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/40"
-            : "text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50"
+            : "text-text-secondary border border-border-primary hover:text-text-primary hover:border-border-strong hover:bg-surface-hover"
         }`}
       >
         <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> Top Performers
       </button>
       <button
         onClick={() => onQuickFilter("clear")}
-        className="inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium text-gray-400 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-800/50 transition-all"
+        className="inline-flex items-center px-3 py-1.5 rounded-md text-xs cursor-pointer font-medium text-text-secondary border border-border-primary hover:text-text-primary hover:border-border-strong hover:bg-surface-hover transition-all"
       >
         Clear
       </button>
@@ -190,7 +190,7 @@ export function QuickFilters({
       {/* Active column filter pills */}
       {columnFilterEntries.length > 0 && (
         <>
-          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <div className="w-px h-5 bg-border-primary mx-1" />
           {columnFilterEntries.map(([column, filter]) => (
             <span
               key={column}

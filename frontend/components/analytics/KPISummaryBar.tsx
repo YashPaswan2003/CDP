@@ -103,12 +103,12 @@ export default function KPISummaryBar({
         return (
           <div
             key={metric.key}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-4 min-w-0"
+            className="bg-surface-base border border-border-primary rounded-xl p-4 min-w-0"
           >
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+            <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">
               {metric.label}
             </p>
-            <p className="text-xl font-bold font-mono tabular-nums text-white leading-tight">
+            <p className="text-xl font-bold font-mono tabular-nums text-text-primary leading-tight">
               {metric.format(value, currency)}
             </p>
             {change != null && (

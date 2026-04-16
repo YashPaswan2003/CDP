@@ -43,15 +43,15 @@ export default function PeriodSelector({
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Period pills */}
-      <div className="flex items-center gap-1 bg-gray-900 rounded-lg p-1">
+      <div className="flex items-center gap-1 bg-surface-elevated rounded-lg p-1">
         {PRESETS.map((preset) => (
           <button
             key={preset.days}
             onClick={() => handlePresetClick(preset.days)}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
               !isCustom && periodDays === preset.days
-                ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
-                : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                ? "bg-primary-500 text-white shadow-sm ring-2 ring-primary-500/20"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
             }`}
           >
             {preset.label}
@@ -62,8 +62,8 @@ export default function PeriodSelector({
             onClick={handleCustomClick}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
               isCustom
-                ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
-                : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                ? "bg-primary-500 text-white shadow-sm ring-2 ring-primary-500/20"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface-hover"
             }`}
           >
             Custom
@@ -75,7 +75,7 @@ export default function PeriodSelector({
       {isCustom && onCustomDateChange && (
         <div className="flex gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1">
               From
             </label>
             <input
@@ -84,11 +84,11 @@ export default function PeriodSelector({
               onChange={(e) =>
                 onCustomDateChange(e.target.value, customDateTo || "")
               }
-              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none"
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1">
               To
             </label>
             <input
@@ -97,7 +97,7 @@ export default function PeriodSelector({
               onChange={(e) =>
                 onCustomDateChange(customDateFrom || "", e.target.value)
               }
-              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none"
+              className="px-3 py-1.5 bg-surface-elevated border border-border-primary rounded text-text-primary text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 outline-none"
             />
           </div>
         </div>
@@ -113,10 +113,10 @@ export default function PeriodSelector({
               onChange={(e) => onCompareToggle(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-gray-700 rounded-full peer-checked:bg-indigo-600 transition-colors" />
+            <div className="w-9 h-5 bg-border-strong rounded-full peer-checked:bg-primary-500 transition-colors" />
             <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4" />
           </div>
-          <span className="text-xs text-gray-400 whitespace-nowrap">
+          <span className="text-xs text-text-secondary whitespace-nowrap">
             Compare to previous period
           </span>
         </label>
